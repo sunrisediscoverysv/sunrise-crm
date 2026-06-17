@@ -65,7 +65,8 @@ export function SettingsPage() {
   const [tab, setTab] = useState<Tab>('pipeline')
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
+    <div className="h-full overflow-y-auto">
+    <div className="p-4 md:p-8 max-w-2xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="font-display text-3xl text-brand-dark">Configuración</h1>
@@ -116,6 +117,7 @@ export function SettingsPage() {
           <TeamTab />
         </section>
       )}
+    </div>
     </div>
   )
 }

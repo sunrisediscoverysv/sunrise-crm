@@ -15,7 +15,6 @@ export function PipelinePage() {
   const { data: clients = [], isLoading: loadingClients } = useClients()
   const [movingId, setMovingId] = useState<string | null>(null)
 
-  // Realtime: invalidate clients cache when any client row changes
   useEffect(() => {
     const channel = supabase
       .channel('pipeline-clients-rt')
@@ -26,11 +25,8 @@ export function PipelinePage() {
     return () => { supabase.removeChannel(channel) }
   }, [queryClient])
 
-  // Group clients by stage
   const clientsByStage: Record<string, ClientWithProfile[]> = {}
-  for (const stage of stages) {
-    clientsByStage[stage.id] = []
-  }
+  for (const stage of stages) clientsByStage[stage.id] = []
   for (const client of clients) {
     if (client.stage_id && clientsByStage[client.stage_id]) {
       clientsByStage[client.stage_id].push(client)
@@ -45,7 +41,6 @@ export function PipelinePage() {
     const fromStageId = source.droppableId
     const toStageId = destination.droppableId
 
-    // Optimistic update — move card in cache immediately
     queryClient.setQueryData<ClientWithProfile[]>(['clients', {}], old => {
       if (!old) return old
       const toStage = stages.find(s => s.id === toStageId)
@@ -74,12 +69,12 @@ export function PipelinePage() {
   const isLoading = loadingStages || loadingClients
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-8 pt-8 pb-5 bg-[#f7f8f9] border-b border-brand-light-gray flex-shrink-0">
+      <div className="px-4 md:px-8 pt-5 md:pt-8 pb-4 md:pb-5 bg-[#f7f8f9] border-b border-brand-light-gray flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-3xl text-brand-dark">Pipeline</h1>
+            <h1 className="font-display text-2xl md:text-3xl text-brand-dark">Pipeline</h1>
             <p className="text-brand-charcoal/60 font-sans mt-0.5 text-sm">
               {clients.length} cliente{clients.length !== 1 ? 's' : ''} en el embudo
             </p>
@@ -87,7 +82,7 @@ export function PipelinePage() {
           {movingId && (
             <div className="flex items-center gap-2 text-sm text-brand-charcoal/60 font-sans">
               <span className="h-4 w-4 border-2 border-brand-teal border-t-transparent rounded-full animate-spin" />
-              Guardando...
+              <span className="hidden sm:inline">Guardando...</span>
             </div>
           )}
         </div>
@@ -99,9 +94,9 @@ export function PipelinePage() {
           <span className="h-8 w-8 border-2 border-brand-teal border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="flex-1 overflow-x-auto">
+        <div className="flex-1 overflow-auto">
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex gap-4 p-6 min-w-max h-full items-start">
+            <div className="flex gap-3 md:gap-4 p-4 md:p-6 min-w-max min-h-full items-start">
               {stages.map(stage => (
                 <KanbanColumn
                   key={stage.id}

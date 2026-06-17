@@ -2,6 +2,11 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
 import { Button } from '@/components/Button'
 
+interface SidebarProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
 const navItems = [
   {
     to: '/dashboard',
@@ -45,41 +50,65 @@ const adminNavItems = [
   },
 ]
 
-export function Sidebar() {
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { profile, signOut } = useAuth()
 
+  const navLink = (to: string, label: string, icon: React.ReactNode) => (
+    <NavLink
+      to={to}
+      onClick={onClose}
+      className={({ isActive }) =>
+        [
+          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-sans font-medium transition-colors duration-150',
+          isActive
+            ? 'bg-brand-teal/15 text-white border-l-2 border-brand-teal pl-[10px]'
+            : 'text-white/60 hover:text-white hover:bg-white/5',
+        ].join(' ')
+      }
+    >
+      {icon}
+      {label}
+    </NavLink>
+  )
+
   return (
-    <aside className="w-64 flex-shrink-0 bg-brand-dark flex flex-col h-screen sticky top-0">
+    <aside
+      className={[
+        'flex-shrink-0 bg-brand-dark flex flex-col h-full w-64',
+        // Mobile: slide in/out from left as fixed overlay
+        'fixed top-0 left-0 z-30 transition-transform duration-300 ease-in-out',
+        isOpen ? 'translate-x-0' : '-translate-x-full',
+        // Desktop: static, always visible
+        'lg:relative lg:translate-x-0 lg:z-auto',
+      ].join(' ')}
+    >
       {/* Logo */}
-      <div className="px-6 py-6 border-b border-white/10">
-        <img
-          src="https://cdn.prod.website-files.com/6a08b2c521f08afd837587ad/6a08b3386c591bbe5b0d3425_Group%201171274935.svg"
-          alt="Sunrise Discovery"
-          className="h-8 brightness-0 invert"
-        />
-        <p className="text-white/40 text-xs font-sans mt-1.5 tracking-wider uppercase">CRM</p>
+      <div className="px-6 py-6 border-b border-white/10 flex items-center justify-between">
+        <div>
+          <img
+            src="https://cdn.prod.website-files.com/6a08b2c521f08afd837587ad/6a08b3386c591bbe5b0d3425_Group%201171274935.svg"
+            alt="Sunrise Discovery"
+            className="h-8 brightness-0 invert"
+          />
+          <p className="text-white/40 text-xs font-sans mt-1.5 tracking-wider uppercase">CRM</p>
+        </div>
+        {/* Close button — mobile only */}
+        <button
+          onClick={onClose}
+          className="lg:hidden text-white/40 hover:text-white p-1 rounded transition-colors"
+          aria-label="Cerrar menú"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-5 overflow-y-auto">
         <ul className="flex flex-col gap-0.5">
           {navItems.map(({ to, label, icon }) => (
-            <li key={to}>
-              <NavLink
-                to={to}
-                className={({ isActive }) =>
-                  [
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-sans font-medium transition-colors duration-150',
-                    isActive
-                      ? 'bg-brand-teal/15 text-white border-l-2 border-brand-teal pl-[10px]'
-                      : 'text-white/60 hover:text-white hover:bg-white/5',
-                  ].join(' ')
-                }
-              >
-                {icon}
-                {label}
-              </NavLink>
-            </li>
+            <li key={to}>{navLink(to, label, icon)}</li>
           ))}
         </ul>
 
@@ -89,22 +118,7 @@ export function Sidebar() {
             <p className="text-white/30 text-xs font-sans uppercase tracking-wider px-3 mb-2">Admin</p>
             <ul className="flex flex-col gap-0.5">
               {adminNavItems.map(({ to, label, icon }) => (
-                <li key={to}>
-                  <NavLink
-                    to={to}
-                    className={({ isActive }) =>
-                      [
-                        'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-sans font-medium transition-colors duration-150',
-                        isActive
-                          ? 'bg-brand-teal/15 text-white border-l-2 border-brand-teal pl-[10px]'
-                          : 'text-white/60 hover:text-white hover:bg-white/5',
-                      ].join(' ')
-                    }
-                  >
-                    {icon}
-                    {label}
-                  </NavLink>
-                </li>
+                <li key={to}>{navLink(to, label, icon)}</li>
               ))}
             </ul>
           </>

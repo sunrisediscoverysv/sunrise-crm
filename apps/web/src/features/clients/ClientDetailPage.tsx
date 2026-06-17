@@ -93,7 +93,8 @@ export function ClientDetailPage() {
   const assignee = client.profiles as { full_name: string; avatar_url: string | null } | null
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="h-full overflow-y-auto">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm font-sans mb-6">
         <button onClick={() => navigate('/clients')} className="text-brand-charcoal/50 hover:text-brand-teal transition-colors">
@@ -192,6 +193,7 @@ export function ClientDetailPage() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   )
 }
