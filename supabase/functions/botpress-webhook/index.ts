@@ -11,9 +11,11 @@ interface BotpressPayload {
   full_name?: string | null
   phone?: string | null
   email?: string | null
+  budget_range?: string | null
   message?: string | null
   interest_type?: 'real_estate' | 'construction' | 'concierge' | 'other' | null
   property_of_interest?: string | null
+  source?: string | null
   timestamp?: string | null
 }
 
@@ -81,8 +83,10 @@ Deno.serve(async (req: Request) => {
         full_name: payload.full_name ?? null,
         phone: payload.phone ?? null,
         email: payload.email ?? null,
+        budget_range: payload.budget_range ?? null,
         interest_type: payload.interest_type ?? null,
         property_of_interest: payload.property_of_interest ?? null,
+        source: payload.source ?? 'Botpress',
         stage_id: firstStage?.id ?? null,
         last_contact_at: new Date().toISOString(),
       })
@@ -108,6 +112,7 @@ Deno.serve(async (req: Request) => {
     if (payload.email != null) updates.email = payload.email
     if (payload.interest_type != null) updates.interest_type = payload.interest_type
     if (payload.property_of_interest != null) updates.property_of_interest = payload.property_of_interest
+    if (payload.budget_range != null) updates.budget_range = payload.budget_range
 
     await supabase.from('clients').update(updates).eq('id', clientId)
   }
