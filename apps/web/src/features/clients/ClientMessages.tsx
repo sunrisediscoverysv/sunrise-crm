@@ -33,7 +33,7 @@ export function ClientMessages({ clientId }: ClientMessagesProps) {
 
   return (
     <section>
-      <h3 className="font-display text-lg text-brand-dark mb-4">Historial de mensajes</h3>
+      <h3 className="font-sans font-semibold text-lg text-brand-dark mb-4">Historial de mensajes</h3>
 
       {isLoading ? (
         <div className="flex flex-col gap-2">

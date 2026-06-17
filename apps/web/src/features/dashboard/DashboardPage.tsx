@@ -75,7 +75,7 @@ export function DashboardPage() {
           <p className="text-xs font-sans text-brand-charcoal/40 uppercase tracking-widest mb-2">
             {new Date().toLocaleDateString('es-SV', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <h1 className="font-display text-3xl md:text-4xl text-brand-dark leading-tight">
+          <h1 className="font-sans font-bold text-3xl md:text-4xl text-brand-dark leading-tight">
             {greeting},{' '}
             <span className="text-brand-teal">{firstName}</span>
           </h1>
@@ -86,7 +86,7 @@ export function DashboardPage() {
 
           <div className="col-span-2 lg:col-span-1 bg-brand-dark rounded-card p-6 flex flex-col gap-4">
             <p className="text-white/50 text-[11px] font-sans uppercase tracking-widest">Total leads</p>
-            <p className="font-display text-5xl text-white font-semibold leading-none tabular-nums">{totalClients}</p>
+            <p className="font-sans font-bold text-5xl text-white leading-none tabular-nums">{totalClients}</p>
             <div className="mt-auto pt-3 border-t border-white/10">
               <p className="text-white/30 text-xs font-sans">clientes registrados</p>
             </div>
@@ -94,17 +94,17 @@ export function DashboardPage() {
 
           <div className="bg-white rounded-card p-6 border border-brand-light-gray flex flex-col gap-3">
             <p className="text-brand-charcoal/40 text-[11px] font-sans uppercase tracking-widest">Ganados</p>
-            <p className="font-display text-4xl text-brand-gold font-semibold leading-none tabular-nums">{wonCount}</p>
+            <p className="font-sans font-bold text-4xl text-brand-gold leading-none tabular-nums">{wonCount}</p>
           </div>
 
           <div className="bg-white rounded-card p-6 border border-brand-light-gray flex flex-col gap-3">
             <p className="text-brand-charcoal/40 text-[11px] font-sans uppercase tracking-widest">Últimos 7 días</p>
-            <p className="font-display text-4xl text-brand-teal font-semibold leading-none tabular-nums">{recentLeads?.length ?? 0}</p>
+            <p className="font-sans font-bold text-4xl text-brand-teal leading-none tabular-nums">{recentLeads?.length ?? 0}</p>
           </div>
 
           <div className="bg-white rounded-card p-6 border border-brand-light-gray flex flex-col gap-3">
             <p className="text-brand-charcoal/40 text-[11px] font-sans uppercase tracking-widest">Conversión</p>
-            <p className="font-display text-4xl text-brand-dark font-semibold leading-none tabular-nums">
+            <p className="font-sans font-bold text-4xl text-brand-dark leading-none tabular-nums">
               {conversionRate}<span className="text-2xl text-brand-charcoal/25">%</span>
             </p>
           </div>

@@ -88,7 +88,7 @@ export function PipelinePage() {
       <div className="px-4 md:px-8 pt-5 md:pt-6 pb-3 bg-[#f7f8f9] border-b border-brand-light-gray flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="font-display text-2xl md:text-3xl text-brand-dark">Pipeline</h1>
+            <h1 className="font-sans font-semibold text-2xl md:text-3xl text-brand-dark">Pipeline</h1>
             <p className="text-brand-charcoal/60 font-sans mt-0.5 text-sm">
               {filteredClients.length} cliente{filteredClients.length !== 1 ? 's' : ''}
               {activeFilters > 0 && <span className="text-brand-teal"> · {activeFilters} filtro{activeFilters > 1 ? 's' : ''} activo{activeFilters > 1 ? 's' : ''}</span>}

@@ -123,7 +123,7 @@ export function ClientDetailPage() {
         <Avatar name={client.full_name} size="lg" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="font-display text-3xl text-brand-dark">{client.full_name ?? 'Sin nombre'}</h1>
+            <h1 className="font-sans font-bold text-3xl text-brand-dark">{client.full_name ?? 'Sin nombre'}</h1>
             <ChannelBadge channel={client.channel} />
             {stage && <Badge color={stage.color}>{stage.name}</Badge>}
           </div>

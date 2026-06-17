@@ -69,7 +69,7 @@ export function SettingsPage() {
     <div className="p-4 md:p-8 max-w-2xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="font-display text-3xl text-brand-dark">Configuración</h1>
+        <h1 className="font-sans font-bold text-3xl text-brand-dark">Configuración</h1>
         <p className="text-brand-charcoal/60 font-sans mt-1 text-sm">
           Solo los administradores pueden acceder a esta sección.
         </p>
@@ -97,7 +97,7 @@ export function SettingsPage() {
       {tab === 'pipeline' && (
         <section>
           <div className="mb-4">
-            <h2 className="font-display text-xl text-brand-dark">Etapas del pipeline</h2>
+            <h2 className="font-sans font-semibold text-xl text-brand-dark">Etapas del pipeline</h2>
             <p className="text-sm text-brand-charcoal/50 font-sans mt-0.5">
               Define las etapas del embudo de ventas. El orden aquí es el orden en el Kanban.
             </p>
@@ -109,7 +109,7 @@ export function SettingsPage() {
       {tab === 'team' && (
         <section>
           <div className="mb-4">
-            <h2 className="font-display text-xl text-brand-dark">Miembros del equipo</h2>
+            <h2 className="font-sans font-semibold text-xl text-brand-dark">Miembros del equipo</h2>
             <p className="text-sm text-brand-charcoal/50 font-sans mt-0.5">
               Usuarios registrados en el CRM. Los nuevos usuarios se crean desde Supabase Auth.
             </p>

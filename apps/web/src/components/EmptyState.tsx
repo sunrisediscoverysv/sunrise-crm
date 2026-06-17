@@ -15,7 +15,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
           {icon}
         </div>
       )}
-      <p className="font-display text-lg text-brand-dark mb-1">{title}</p>
+      <p className="font-sans font-semibold text-lg text-brand-dark mb-1">{title}</p>
       {description && <p className="text-sm text-brand-charcoal/50 font-sans max-w-xs">{description}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>

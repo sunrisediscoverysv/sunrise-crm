@@ -58,7 +58,7 @@ export function ClientComments({ clientId }: ClientCommentsProps) {
 
   return (
     <section>
-      <h3 className="font-display text-lg text-brand-dark mb-4">Comentarios internos</h3>
+      <h3 className="font-sans font-semibold text-lg text-brand-dark mb-4">Comentarios internos</h3>
 
       <div className="flex flex-col gap-4 mb-5">
         {isLoading ? (

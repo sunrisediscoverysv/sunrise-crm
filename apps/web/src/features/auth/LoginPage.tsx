@@ -47,7 +47,7 @@ export function LoginPage() {
 
         {/* Card */}
         <div className="bg-white rounded-card p-8 shadow-lg">
-          <h1 className="font-display text-2xl text-brand-dark mb-1">Acceso al CRM</h1>
+          <h1 className="font-sans font-semibold text-2xl text-brand-dark mb-1">Acceso al CRM</h1>
           <p className="text-sm text-brand-charcoal/60 font-sans mb-7">
             Ingresa con tu cuenta del equipo
           </p>

@@ -68,7 +68,7 @@ export function NewClientModal({ open, onClose }: NewClientModalProps) {
       <div className="relative bg-white rounded-card shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-brand-light-gray sticky top-0 bg-white z-10">
-          <h2 className="font-display text-xl text-brand-dark">Nuevo cliente</h2>
+          <h2 className="font-sans font-semibold text-xl text-brand-dark">Nuevo cliente</h2>
           <button onClick={onClose} className="text-brand-charcoal/40 hover:text-brand-dark transition-colors p-1">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
