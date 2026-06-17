@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment variables — NUNCA subir al repo
+.env
+.env.local
+.env.*.local
+
+# Supabase local dev data
+supabase/.branches/
+supabase/.temp/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+*.swp
