@@ -96,8 +96,11 @@ export function PipelinePage() {
       ) : (
         <div className="flex-1 overflow-auto">
           <DragDropContext onDragEnd={onDragEnd}>
-            {/* Mobile: flex-col (vertical scroll). Desktop: flex-row (horizontal scroll) */}
-            <div className="flex flex-col md:flex-row md:items-start gap-3 md:gap-4 p-4 md:p-6 md:min-w-max md:min-h-full">
+            {/* Grid auto-fill: 1 col on mobile, fills width on desktop — no horizontal scroll */}
+            <div
+              className="grid gap-3 p-4 md:gap-4 md:p-6 min-h-full auto-rows-fr"
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}
+            >
               {stages.map(stage => (
                 <KanbanColumn
                   key={stage.id}
