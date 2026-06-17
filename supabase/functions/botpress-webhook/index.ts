@@ -19,15 +19,35 @@ interface BotpressPayload {
   timestamp?: string | null
 }
 
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let result = 0
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  }
+  return result === 0
+}
+
+const FIELD_MAX_LENGTHS: Record<string, number> = {
+  full_name: 255,
+  phone: 30,
+  email: 255,
+  budget_range: 150,
+  property_of_interest: 500,
+  source: 100,
+  message: 4000,
+  channel_user_id: 255,
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   const webhookSecret = Deno.env.get('BOTPRESS_WEBHOOK_SECRET')
-  const incomingSecret = req.headers.get('x-webhook-secret')
+  const incomingSecret = req.headers.get('x-webhook-secret') ?? ''
 
-  if (!webhookSecret || incomingSecret !== webhookSecret) {
+  if (!webhookSecret || !timingSafeEqual(incomingSecret, webhookSecret)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -49,6 +69,17 @@ Deno.serve(async (req: Request) => {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
+  }
+
+  // Validate field lengths to prevent oversized payloads
+  for (const [field, maxLen] of Object.entries(FIELD_MAX_LENGTHS)) {
+    const val = (payload as Record<string, unknown>)[field]
+    if (typeof val === 'string' && val.length > maxLen) {
+      return new Response(JSON.stringify({ error: `Field '${field}' exceeds maximum length` }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
   }
 
   const supabase = createClient(
@@ -150,7 +181,7 @@ Deno.serve(async (req: Request) => {
               <tr><td style="padding:8px 0;color:#666;font-size:14px">Canal</td><td style="padding:8px 0;font-size:14px">${payload.channel}</td></tr>
               ${payload.budget_range ? `<tr><td style="padding:8px 0;color:#666;font-size:14px">Presupuesto</td><td style="padding:8px 0;font-size:14px">${payload.budget_range}</td></tr>` : ''}
             </table>
-            <a href="https://sunrise-crm-drab.vercel.app/clients/${clientId}" style="display:inline-block;margin-top:20px;padding:10px 20px;background:#1ebbae;color:#fff;text-decoration:none;border-radius:8px;font-size:14px">
+            <a href="${Deno.env.get('APP_URL') ?? 'https://sunrise-crm-drab.vercel.app'}/clients/${clientId}" style="display:inline-block;margin-top:20px;padding:10px 20px;background:#1ebbae;color:#fff;text-decoration:none;border-radius:8px;font-size:14px">
               Ver en el CRM →
             </a>
           </div>

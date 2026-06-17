@@ -18,7 +18,18 @@ export function LoginPage() {
     setError(null)
     setSubmitting(true)
     const { error } = await signIn(email, password)
-    if (error) setError(error)
+    if (error) {
+      const msg = error.toLowerCase()
+      if (msg.includes('invalid') || msg.includes('credentials') || msg.includes('not found')) {
+        setError('Correo o contraseña incorrectos.')
+      } else if (msg.includes('email not confirmed')) {
+        setError('Confirma tu correo antes de ingresar.')
+      } else if (msg.includes('too many')) {
+        setError('Demasiados intentos. Espera unos minutos e intenta de nuevo.')
+      } else {
+        setError('Ocurrió un error al iniciar sesión. Intenta de nuevo.')
+      }
+    }
     setSubmitting(false)
   }
 
