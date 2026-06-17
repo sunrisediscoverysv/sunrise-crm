@@ -126,6 +126,39 @@ Deno.serve(async (req: Request) => {
     raw_payload: payload as unknown as Record<string, unknown>,
   })
 
+  // Email notification — only fires if RESEND_API_KEY and NOTIFICATION_EMAIL are configured
+  const resendKey = Deno.env.get('RESEND_API_KEY')
+  const notifEmail = Deno.env.get('NOTIFICATION_EMAIL')
+  if (resendKey && notifEmail && !existingClient) {
+    const clientName = payload.full_name ?? 'Sin nombre'
+    const clientPhone = payload.phone ?? '—'
+    const clientEmail = payload.email ?? '—'
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
+      body: JSON.stringify({
+        from: 'CRM Sunrise Discovery <noreply@sunrisediscovery.com>',
+        to: [notifEmail],
+        subject: `Nuevo lead: ${clientName}`,
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+            <h2 style="color:#0a2540;margin-bottom:16px">Nuevo lead en el CRM</h2>
+            <table style="width:100%;border-collapse:collapse">
+              <tr><td style="padding:8px 0;color:#666;font-size:14px">Nombre</td><td style="padding:8px 0;font-size:14px;font-weight:600">${clientName}</td></tr>
+              <tr><td style="padding:8px 0;color:#666;font-size:14px">Teléfono</td><td style="padding:8px 0;font-size:14px">${clientPhone}</td></tr>
+              <tr><td style="padding:8px 0;color:#666;font-size:14px">Email</td><td style="padding:8px 0;font-size:14px">${clientEmail}</td></tr>
+              <tr><td style="padding:8px 0;color:#666;font-size:14px">Canal</td><td style="padding:8px 0;font-size:14px">${payload.channel}</td></tr>
+              ${payload.budget_range ? `<tr><td style="padding:8px 0;color:#666;font-size:14px">Presupuesto</td><td style="padding:8px 0;font-size:14px">${payload.budget_range}</td></tr>` : ''}
+            </table>
+            <a href="https://sunrise-crm-drab.vercel.app/clients/${clientId}" style="display:inline-block;margin-top:20px;padding:10px 20px;background:#1ebbae;color:#fff;text-decoration:none;border-radius:8px;font-size:14px">
+              Ver en el CRM →
+            </a>
+          </div>
+        `,
+      }),
+    }).catch(() => { /* silently ignore email errors */ })
+  }
+
   return new Response(JSON.stringify({ status: 'ok', client_id: clientId }), {
     status: 200,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },

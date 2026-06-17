@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient'
 import type {
+  ClientInsert,
   ClientUpdate,
   ClientCommentInsert,
   StageHistoryInsert,
@@ -18,6 +19,12 @@ type PipelineStageInsert = Database['public']['Tables']['pipeline_stages']['Inse
 type PipelineStageUpdate = Database['public']['Tables']['pipeline_stages']['Update']
 
 // ── Client mutations ──────────────────────────────────────────────────────────
+
+export async function createClient(values: Omit<ClientInsert, 'id' | 'created_at' | 'updated_at'>): Promise<string> {
+  const { data, error } = await raw.from('clients').insert(values).select('id').single()
+  if (error) throw new Error(error.message)
+  return (data as { id: string }).id
+}
 
 export async function updateClient(id: string, values: ClientUpdate): Promise<void> {
   const { error } = await raw.from('clients').update(values).eq('id', id)

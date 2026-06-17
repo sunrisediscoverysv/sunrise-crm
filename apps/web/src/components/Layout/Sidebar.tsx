@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
 import { Button } from '@/components/Button'
+import { GlobalSearch } from '@/components/GlobalSearch'
 
 interface SidebarProps {
   isOpen: boolean
@@ -102,6 +103,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
+      </div>
+
+      {/* Global search */}
+      <div className="px-3 py-3 border-b border-white/10">
+        <GlobalSearch />
       </div>
 
       {/* Navigation */}

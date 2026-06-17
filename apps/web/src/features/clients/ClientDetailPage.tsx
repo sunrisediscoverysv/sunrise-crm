@@ -70,6 +70,11 @@ export function ClientDetailPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['client', id] }),
   })
 
+  const updateFollowUp = useMutation({
+    mutationFn: (date: string | null) => updateClient(id!, { follow_up_at: date }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['client', id] }),
+  })
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -156,6 +161,37 @@ export function ClientDetailPage() {
             {updateStage.isPending && (
               <p className="text-xs text-brand-charcoal/40 font-sans mt-1.5">Guardando…</p>
             )}
+          </div>
+
+          {/* Follow-up date */}
+          <div className="bg-white rounded-card border border-brand-light-gray p-5">
+            <h3 className="font-display text-base text-brand-dark mb-3">Próximo seguimiento</h3>
+            {client.follow_up_at && (
+              <p className={[
+                'text-xs font-sans mb-2 flex items-center gap-1',
+                new Date(client.follow_up_at) < new Date() ? 'text-red-500' : 'text-brand-charcoal/60',
+              ].join(' ')}>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {new Date(client.follow_up_at) < new Date() ? 'Vencido: ' : ''}
+                {new Date(client.follow_up_at).toLocaleDateString('es-SV', { day: '2-digit', month: 'long', year: 'numeric' })}
+              </p>
+            )}
+            <div className="flex gap-2 items-center">
+              <input
+                type="date"
+                defaultValue={client.follow_up_at ? client.follow_up_at.slice(0, 10) : ''}
+                onChange={e => updateFollowUp.mutate(e.target.value ? new Date(e.target.value).toISOString() : null)}
+                className="flex-1 text-sm font-sans text-brand-dark border border-brand-light-gray rounded-button px-3 py-2 outline-none focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal"
+              />
+              {client.follow_up_at && (
+                <button onClick={() => updateFollowUp.mutate(null)} className="text-xs text-brand-charcoal/40 hover:text-red-500 transition-colors font-sans">
+                  ✕
+                </button>
+              )}
+            </div>
+            {updateFollowUp.isPending && <p className="text-xs text-brand-charcoal/40 font-sans mt-1">Guardando…</p>}
           </div>
 
           {/* Agent selector */}

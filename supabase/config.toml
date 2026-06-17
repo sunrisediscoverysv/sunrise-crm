@@ -26,11 +26,6 @@ max_client_conn = 100
 [realtime]
 enabled = true
 ip_version = "IPv6"
-heartbeat_interval_ms = 30000
-min_poll_interval_ms = 100
-max_poll_interval_ms = 250
-dequeue_timeout_ms = 5000
-max_push_delay_ms = 250
 
 [studio]
 enabled = true
