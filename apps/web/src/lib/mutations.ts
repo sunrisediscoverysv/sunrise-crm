@@ -26,6 +26,11 @@ export async function createClient(values: Omit<ClientInsert, 'id' | 'created_at
   return (data as { id: string }).id
 }
 
+export async function deleteClient(id: string): Promise<void> {
+  const { error } = await raw.from('clients').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 export async function updateClient(id: string, values: ClientUpdate): Promise<void> {
   const { error } = await raw.from('clients').update(values).eq('id', id)
   if (error) throw new Error(error.message)

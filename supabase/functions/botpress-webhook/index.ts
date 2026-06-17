@@ -137,7 +137,7 @@ Deno.serve(async (req: Request) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
       body: JSON.stringify({
-        from: 'CRM Sunrise Discovery <noreply@sunrisediscovery.com>',
+        from: 'CRM Sunrise Discovery <onboarding@resend.dev>',
         to: [notifEmail],
         subject: `Nuevo lead: ${clientName}`,
         html: `

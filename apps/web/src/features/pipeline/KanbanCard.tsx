@@ -38,18 +38,18 @@ export function KanbanCard({ client, index }: KanbanCardProps) {
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           className={[
-            'bg-white rounded-card border p-3.5 cursor-grab active:cursor-grabbing select-none',
-            'transition-all duration-150',
+            'bg-white rounded-[16px] border p-4 cursor-grab active:cursor-grabbing select-none',
+            'transition-all duration-200',
             snapshot.isDragging
-              ? 'shadow-xl border-brand-teal/50 rotate-1 scale-[1.02]'
-              : 'border-brand-light-gray hover:border-brand-teal/40 hover:shadow-md',
+              ? 'shadow-[0_12px_40px_-8px_rgba(3,165,175,0.25),0_4px_16px_-4px_rgba(0,0,0,0.1)] border-brand-teal/40 rotate-1 scale-[1.02]'
+              : 'border-brand-light-gray shadow-card hover:border-brand-teal/30 hover:shadow-card-hover',
           ].join(' ')}
         >
           {/* Name + channel */}
           <div className="flex items-start justify-between gap-2 mb-2">
             <Link
               to={`/clients/${client.id}`}
-              className="text-sm font-semibold text-brand-dark font-sans leading-snug hover:text-brand-teal transition-colors line-clamp-2 flex-1"
+              className="text-[13px] font-semibold text-brand-dark font-sans leading-snug hover:text-brand-teal transition-colors line-clamp-2 flex-1 tracking-[-0.01em]"
               onClick={e => e.stopPropagation()}
             >
               {client.full_name ?? 'Sin nombre'}

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useClient } from '@/hooks/useClients'
@@ -11,7 +11,7 @@ import { Badge, ChannelBadge } from '@/components/Badge'
 import { Avatar } from '@/components/Avatar'
 import { Select } from '@/components/Select'
 import { supabase } from '@/lib/supabaseClient'
-import { moveClientToStage, updateClient } from '@/lib/mutations'
+import { moveClientToStage, updateClient, deleteClient } from '@/lib/mutations'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -37,6 +37,7 @@ export function ClientDetailPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const { data: client, isLoading } = useClient(id!)
   const { data: stages = [] } = usePipelineStages()
@@ -73,6 +74,14 @@ export function ClientDetailPage() {
   const updateFollowUp = useMutation({
     mutationFn: (date: string | null) => updateClient(id!, { follow_up_at: date }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['client', id] }),
+  })
+
+  const removeClient = useMutation({
+    mutationFn: () => deleteClient(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+      navigate('/clients')
+    },
   })
 
   if (isLoading) {
@@ -129,7 +138,7 @@ export function ClientDetailPage() {
         <div className="lg:col-span-1 flex flex-col gap-5">
           {/* Contact info */}
           <div className="bg-white rounded-card border border-brand-light-gray p-5">
-            <h3 className="font-display text-base text-brand-dark mb-4">Información de contacto</h3>
+            <h3 className="text-xs font-semibold font-sans text-brand-charcoal/45 uppercase tracking-wider mb-4">Información de contacto</h3>
             <dl className="flex flex-col gap-3">
               <InfoRow label="Teléfono" value={client.phone} />
               <InfoRow label="Email" value={client.email} />
@@ -149,7 +158,7 @@ export function ClientDetailPage() {
 
           {/* Stage selector */}
           <div className="bg-white rounded-card border border-brand-light-gray p-5">
-            <h3 className="font-display text-base text-brand-dark mb-3">Etapa del pipeline</h3>
+            <h3 className="text-xs font-semibold font-sans text-brand-charcoal/45 uppercase tracking-wider mb-3">Etapa del pipeline</h3>
             <Select
               options={stages.map(s => ({ value: s.id, label: s.name }))}
               value={client.stage_id ?? ''}
@@ -165,7 +174,7 @@ export function ClientDetailPage() {
 
           {/* Follow-up date */}
           <div className="bg-white rounded-card border border-brand-light-gray p-5">
-            <h3 className="font-display text-base text-brand-dark mb-3">Próximo seguimiento</h3>
+            <h3 className="text-xs font-semibold font-sans text-brand-charcoal/45 uppercase tracking-wider mb-3">Próximo seguimiento</h3>
             {client.follow_up_at && (
               <p className={[
                 'text-xs font-sans mb-2 flex items-center gap-1',
@@ -196,7 +205,7 @@ export function ClientDetailPage() {
 
           {/* Agent selector */}
           <div className="bg-white rounded-card border border-brand-light-gray p-5">
-            <h3 className="font-display text-base text-brand-dark mb-3">Agente asignado</h3>
+            <h3 className="text-xs font-semibold font-sans text-brand-charcoal/45 uppercase tracking-wider mb-3">Agente asignado</h3>
             <div className="flex items-center gap-3 mb-3">
               {assignee ? (
                 <>
@@ -215,6 +224,43 @@ export function ClientDetailPage() {
             />
             {updateAgent.isPending && (
               <p className="text-xs text-brand-charcoal/40 font-sans mt-1.5">Guardando…</p>
+            )}
+          </div>
+
+          {/* Delete */}
+          <div className="bg-white rounded-card border border-brand-light-gray p-5">
+            <h3 className="text-xs font-semibold font-sans text-brand-charcoal/45 uppercase tracking-wider mb-3">Zona de peligro</h3>
+            {!confirmingDelete ? (
+              <button
+                onClick={() => setConfirmingDelete(true)}
+                className="flex items-center gap-2 text-sm font-sans text-red-500/80 hover:text-red-600 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Eliminar cliente
+              </button>
+            ) : (
+              <div>
+                <p className="text-xs font-sans text-brand-charcoal/60 mb-3">
+                  ¿Eliminar a <span className="font-semibold text-brand-dark">{client.full_name ?? 'este cliente'}</span>? Esta acción no se puede deshacer.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => removeClient.mutate()}
+                    disabled={removeClient.isPending}
+                    className="flex-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold font-sans rounded-button transition-colors disabled:opacity-60"
+                  >
+                    {removeClient.isPending ? 'Eliminando…' : 'Sí, eliminar'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmingDelete(false)}
+                    className="flex-1 px-3 py-1.5 bg-brand-light-gray hover:bg-brand-light-gray/80 text-brand-charcoal/70 text-xs font-semibold font-sans rounded-button transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
