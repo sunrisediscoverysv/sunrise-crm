@@ -33,18 +33,18 @@ export function KanbanCard({ client, index }: KanbanCardProps) {
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           className={[
-            'bg-white rounded-card border p-3.5 cursor-grab active:cursor-grabbing',
-            'transition-shadow duration-150 group',
+            'bg-white rounded-card border p-3.5 cursor-grab active:cursor-grabbing select-none',
+            'transition-all duration-150',
             snapshot.isDragging
-              ? 'shadow-lg border-brand-teal/40 rotate-1'
-              : 'border-brand-light-gray hover:border-brand-teal/30 hover:shadow-sm',
+              ? 'shadow-xl border-brand-teal/50 rotate-1 scale-[1.02]'
+              : 'border-brand-light-gray hover:border-brand-teal/40 hover:shadow-md',
           ].join(' ')}
         >
           {/* Name + channel */}
           <div className="flex items-start justify-between gap-2 mb-2">
             <Link
               to={`/clients/${client.id}`}
-              className="text-sm font-medium text-brand-dark font-sans leading-snug hover:text-brand-teal transition-colors line-clamp-2"
+              className="text-sm font-semibold text-brand-dark font-sans leading-snug hover:text-brand-teal transition-colors line-clamp-2 flex-1"
               onClick={e => e.stopPropagation()}
             >
               {client.full_name ?? 'Sin nombre'}
@@ -52,23 +52,27 @@ export function KanbanCard({ client, index }: KanbanCardProps) {
             <ChannelBadge channel={client.channel} />
           </div>
 
-          {/* Contact info */}
+          {/* Phone */}
           {client.phone && (
-            <p className="text-xs text-brand-charcoal/50 font-sans mb-1.5 truncate">{client.phone}</p>
+            <p className="text-xs text-brand-charcoal/50 font-sans mb-1.5 truncate flex items-center gap-1">
+              <span className="opacity-60">📞</span> {client.phone}
+            </p>
           )}
 
           {/* Interest */}
           {client.interest_type && (
-            <p className="text-xs text-brand-charcoal/60 font-sans mb-2.5 italic">
+            <p className="text-xs text-brand-teal/80 font-sans mb-2.5 font-medium">
               {interestLabel[client.interest_type]}
-              {client.property_of_interest && ` · ${client.property_of_interest}`}
+              {client.property_of_interest && (
+                <span className="text-brand-charcoal/50 font-normal"> · {client.property_of_interest}</span>
+              )}
             </p>
           )}
 
           {/* Footer: assignee + time */}
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-brand-light-gray">
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-brand-light-gray/80">
             {assignee ? (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 min-w-0">
                 <Avatar name={assignee.full_name} src={assignee.avatar_url} size="sm" />
                 <span className="text-xs text-brand-charcoal/50 font-sans truncate max-w-[80px]">
                   {assignee.full_name.split(' ')[0]}
@@ -77,7 +81,7 @@ export function KanbanCard({ client, index }: KanbanCardProps) {
             ) : (
               <span className="text-xs text-brand-charcoal/30 font-sans">Sin asignar</span>
             )}
-            <span className="text-xs text-brand-charcoal/40 font-sans">{ago}</span>
+            <span className="text-xs text-brand-charcoal/35 font-sans flex-shrink-0">{ago}</span>
           </div>
         </div>
       )}

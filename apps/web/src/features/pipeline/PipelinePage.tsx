@@ -96,7 +96,8 @@ export function PipelinePage() {
       ) : (
         <div className="flex-1 overflow-auto">
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex gap-3 md:gap-4 p-4 md:p-6 min-w-max min-h-full items-start">
+            {/* Mobile: flex-col (vertical scroll). Desktop: flex-row (horizontal scroll) */}
+            <div className="flex flex-col md:flex-row md:items-start gap-3 md:gap-4 p-4 md:p-6 md:min-w-max md:min-h-full">
               {stages.map(stage => (
                 <KanbanColumn
                   key={stage.id}
