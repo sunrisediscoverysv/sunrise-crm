@@ -16,8 +16,7 @@ export default {
         },
       },
       fontFamily: {
-        sans:    ['Outfit', 'sans-serif'],
-        serif:   ['Bitter', 'serif'],
+        sans:    ['Poppins', 'sans-serif'],
         display: ['"Playfair Display"', 'serif'],
       },
       borderRadius: {
