@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Sidebar } from './Sidebar'
+import { InstallPrompt } from '@/components/InstallPrompt'
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -40,6 +41,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+
+      <InstallPrompt />
     </div>
   )
 }

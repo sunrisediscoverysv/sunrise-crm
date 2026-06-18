@@ -18,11 +18,19 @@ type PipelineStageRow = Database['public']['Tables']['pipeline_stages']['Row']
 type PipelineStageInsert = Database['public']['Tables']['pipeline_stages']['Insert']
 type PipelineStageUpdate = Database['public']['Tables']['pipeline_stages']['Update']
 type ClientAttachmentInsert = Database['public']['Tables']['client_attachments']['Insert']
+type PushSubscriptionInsert = Database['public']['Tables']['push_subscriptions']['Insert']
 
 // ── Attachment mutations ─────────────────────────────────────────────────────
 
 export async function addClientAttachment(values: ClientAttachmentInsert): Promise<void> {
   const { error } = await raw.from('client_attachments').insert(values)
+  if (error) throw new Error(error.message)
+}
+
+// ── Push subscriptions ───────────────────────────────────────────────────────
+
+export async function addPushSubscription(values: PushSubscriptionInsert): Promise<void> {
+  const { error } = await raw.from('push_subscriptions').upsert(values, { onConflict: 'endpoint' })
   if (error) throw new Error(error.message)
 }
 
