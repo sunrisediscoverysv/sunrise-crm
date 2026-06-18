@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
 import { Button } from '@/components/Button'
 import { GlobalSearch } from '@/components/GlobalSearch'
+import { InstallButton } from '@/components/InstallButton'
 
 interface SidebarProps {
   isOpen: boolean
@@ -145,6 +146,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* User footer */}
       <div className="px-4 py-4 border-t border-white/[0.07]">
+        <InstallButton />
         <div className="flex items-center gap-3 mb-3">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-teal/40 to-brand-mid flex items-center justify-center flex-shrink-0 ring-1 ring-white/10 shadow-inner">
             <span className="text-sm font-semibold text-white font-sans">
