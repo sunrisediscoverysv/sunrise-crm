@@ -103,6 +103,21 @@ Deno.serve(async (req: Request) => {
     .eq('channel_user_id', payload.channel_user_id)
     .maybeSingle()
 
+  // Best-effort: vincular la propiedad de interés (texto libre) a una del catálogo
+  let matchedPropertyId: string | null = null
+  if (payload.property_of_interest) {
+    const needle = payload.property_of_interest.toLowerCase().trim()
+    const { data: props } = await supabase.from('properties').select('id, name, slug')
+    if (props) {
+      const hit = (props as { id: string; name: string; slug: string | null }[]).find(p => {
+        const name = p.name.toLowerCase()
+        const slugWords = p.slug ? p.slug.replace(/-+/g, ' ') : ''
+        return name.includes(needle) || needle.includes(name) || (slugWords && needle.includes(slugWords))
+      })
+      matchedPropertyId = hit?.id ?? null
+    }
+  }
+
   let clientId: string
 
   if (!existingClient) {
@@ -117,6 +132,7 @@ Deno.serve(async (req: Request) => {
         budget_range: payload.budget_range ?? null,
         interest_type: payload.interest_type ?? null,
         property_of_interest: payload.property_of_interest ?? null,
+        property_id: matchedPropertyId,
         source: payload.source ?? 'Botpress',
         stage_id: firstStage?.id ?? null,
         last_contact_at: new Date().toISOString(),
@@ -143,6 +159,7 @@ Deno.serve(async (req: Request) => {
     if (payload.email != null) updates.email = payload.email
     if (payload.interest_type != null) updates.interest_type = payload.interest_type
     if (payload.property_of_interest != null) updates.property_of_interest = payload.property_of_interest
+    if (matchedPropertyId != null) updates.property_id = matchedPropertyId
     if (payload.budget_range != null) updates.budget_range = payload.budget_range
 
     await supabase.from('clients').update(updates).eq('id', clientId)

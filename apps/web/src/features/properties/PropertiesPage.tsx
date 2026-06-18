@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useProperties } from '@/hooks/useProperties'
+import { useProperties, usePropertyLeadCounts } from '@/hooks/useProperties'
 import { EmptyState } from '@/components/EmptyState'
 import type { Property } from '@/types/database'
 
@@ -14,7 +14,7 @@ const TYPE_LABEL: Record<Property['property_type'], string> = {
   land: 'Terreno', house: 'Casa', department: 'Apartamento', lot: 'Lote', other: 'Otro',
 }
 
-function PropertyCard({ property }: { property: Property }) {
+function PropertyCard({ property, leadCount }: { property: Property; leadCount: number }) {
   const status = STATUS_META[property.status]
   return (
     <div className="group bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 overflow-hidden flex flex-col">
@@ -38,6 +38,14 @@ function PropertyCard({ property }: { property: Property }) {
         <span className="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-xs font-semibold font-sans bg-white/90 text-brand-dark backdrop-blur-sm">
           {TYPE_LABEL[property.property_type]}
         </span>
+        {leadCount > 0 && (
+          <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-lg text-xs font-semibold font-sans bg-brand-dark/85 text-white backdrop-blur-sm flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {leadCount} interesado{leadCount !== 1 ? 's' : ''}
+          </span>
+        )}
       </div>
 
       {/* Body */}
@@ -81,6 +89,7 @@ function PropertyCard({ property }: { property: Property }) {
 
 export function PropertiesPage() {
   const { data: properties = [], isLoading } = useProperties()
+  const { data: leadCounts = {} } = usePropertyLeadCounts()
   const [typeFilter, setTypeFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('')
 
@@ -154,7 +163,7 @@ export function PropertiesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map(p => <PropertyCard key={p.id} property={p} />)}
+            {filtered.map(p => <PropertyCard key={p.id} property={p} leadCount={leadCounts[p.id] ?? 0} />)}
           </div>
         )}
       </div>

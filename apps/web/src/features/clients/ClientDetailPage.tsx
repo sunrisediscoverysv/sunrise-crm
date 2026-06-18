@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useClient } from '@/hooks/useClients'
 import { usePipelineStages } from '@/hooks/usePipelineStages'
 import { useProfiles } from '@/hooks/useProfiles'
+import { useProperties } from '@/hooks/useProperties'
 import { useAuth } from '@/features/auth/AuthContext'
 import { ClientComments } from './ClientComments'
 import { ClientMessages } from './ClientMessages'
@@ -43,6 +44,7 @@ export function ClientDetailPage() {
   const { data: client, isLoading } = useClient(id!)
   const { data: stages = [] } = usePipelineStages()
   const { data: agents = [] } = useProfiles()
+  const { data: properties = [] } = useProperties()
 
   // Realtime: new messages appear without reload
   useEffect(() => {
@@ -77,6 +79,14 @@ export function ClientDetailPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['client', id] }),
   })
 
+  const updateProperty = useMutation({
+    mutationFn: (propertyId: string | null) => updateClient(id!, { property_id: propertyId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client', id] })
+      queryClient.invalidateQueries({ queryKey: ['property-lead-counts'] })
+    },
+  })
+
   const removeClient = useMutation({
     mutationFn: () => deleteClient(id!),
     onSuccess: () => {
@@ -107,6 +117,7 @@ export function ClientDetailPage() {
 
   const stage = client.pipeline_stages as { name: string; color: string } | null
   const assignee = client.profiles as { full_name: string; avatar_url: string | null } | null
+  const linkedProperty = properties.find(p => p.id === client.property_id) ?? null
 
   return (
     <div className="h-full overflow-y-auto bg-[#f6f8f9] bg-app">
@@ -172,6 +183,38 @@ export function ClientDetailPage() {
             {updateStage.isPending && (
               <p className="text-xs text-brand-charcoal/40 font-sans mt-1.5">Guardando…</p>
             )}
+          </div>
+
+          {/* Property of interest */}
+          <div className="bg-white rounded-card shadow-card p-5">
+            <h3 className="text-xs font-semibold font-sans text-brand-charcoal/45 uppercase tracking-wider mb-3">Propiedad de interés</h3>
+            <Select
+              options={properties.map(p => ({ value: p.id, label: p.name }))}
+              value={client.property_id ?? ''}
+              onChange={e => updateProperty.mutate(e.target.value || null)}
+              placeholder="Vincular propiedad…"
+            />
+            {linkedProperty && (
+              <a
+                href={linkedProperty.source_url ?? '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 block rounded-xl bg-[#f7f8f9] p-3 hover:bg-brand-teal/[0.05] transition-colors"
+              >
+                <p className="text-sm font-semibold text-brand-dark font-sans leading-snug">{linkedProperty.name}</p>
+                <div className="flex items-center gap-1.5 mt-1 text-xs font-sans text-brand-charcoal/55">
+                  {linkedProperty.price_label && <span className="text-brand-teal font-semibold">{linkedProperty.price_label}</span>}
+                  {linkedProperty.size_label && <span>· {linkedProperty.size_label}</span>}
+                </div>
+                {linkedProperty.location && <p className="text-xs text-brand-charcoal/45 font-sans mt-0.5">{linkedProperty.location}</p>}
+              </a>
+            )}
+            {!client.property_id && client.property_of_interest && (
+              <p className="text-xs text-brand-charcoal/45 font-sans mt-2">
+                El bot registró: <span className="text-brand-charcoal/70">«{client.property_of_interest}»</span>
+              </p>
+            )}
+            {updateProperty.isPending && <p className="text-xs text-brand-charcoal/40 font-sans mt-1.5">Guardando…</p>}
           </div>
 
           {/* Follow-up date */}
