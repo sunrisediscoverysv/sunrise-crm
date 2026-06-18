@@ -236,7 +236,7 @@ export function ClientDetailPage() {
               <input
                 type="date"
                 defaultValue={client.follow_up_at ? client.follow_up_at.slice(0, 10) : ''}
-                onChange={e => updateFollowUp.mutate(e.target.value ? new Date(e.target.value).toISOString() : null)}
+                onChange={e => updateFollowUp.mutate(e.target.value ? new Date(`${e.target.value}T12:00:00`).toISOString() : null)}
                 className="flex-1 text-sm font-sans text-brand-dark border border-brand-light-gray rounded-button px-3 py-2 outline-none focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal"
               />
               {client.follow_up_at && (

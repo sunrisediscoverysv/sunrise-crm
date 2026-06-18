@@ -44,6 +44,21 @@ function useRecentLeads() {
   })
 }
 
+// Conteo real de leads de los últimos 7 días (la lista de arriba está limitada a 10).
+function useRecentLeadsCount() {
+  return useQuery({
+    queryKey: ['dashboard', 'recent-leads-count'],
+    queryFn: async (): Promise<number> => {
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      const { count } = await supabase
+        .from('clients')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', since)
+      return count ?? 0
+    },
+  })
+}
+
 const channelLabel: Record<string, string> = {
   whatsapp: 'WhatsApp', instagram: 'Instagram', messenger: 'Messenger',
   web_chat: 'Web Chat', other: 'Otro',
@@ -57,6 +72,7 @@ export function DashboardPage() {
   const { profile } = useAuth()
   const { data: stageStats, isLoading: loadingStats } = useStageStats()
   const { data: recentLeads, isLoading: loadingLeads } = useRecentLeads()
+  const { data: recentCount } = useRecentLeadsCount()
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
@@ -110,7 +126,7 @@ export function DashboardPage() {
               <span className="text-xl">⚡</span>
               <p className="text-white/80 text-xs font-sans font-bold uppercase tracking-wider">Últimos 7 días</p>
             </div>
-            <p className="font-display text-5xl text-white leading-none tabular-nums relative">{recentLeads?.length ?? 0}</p>
+            <p className="font-display text-5xl text-white leading-none tabular-nums relative">{recentCount ?? 0}</p>
           </div>
 
           <div className="rounded-card p-6 shadow-card bg-brand-deep flex flex-col gap-3 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
