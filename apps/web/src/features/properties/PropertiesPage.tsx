@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useProperties, usePropertyLeadCounts } from '@/hooks/useProperties'
 import { EmptyState } from '@/components/EmptyState'
+import { NewPropertyModal } from './NewPropertyModal'
 import type { Property } from '@/types/database'
 
 const STATUS_META: Record<Property['status'], { label: string; color: string }> = {
@@ -101,6 +102,7 @@ export function PropertiesPage() {
   const { data: leadCounts = {} } = usePropertyLeadCounts()
   const [typeFilter, setTypeFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [modalOpen, setModalOpen] = useState(false)
 
   const filtered = useMemo(
     () =>
@@ -122,9 +124,20 @@ export function PropertiesPage() {
   return (
     <div className="h-full overflow-y-auto bg-[#f6f8f9] bg-app">
       <div className="p-4 md:p-8 max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="font-display text-3xl md:text-4xl text-brand-dark leading-tight">Propiedades</h1>
-          <p className="text-brand-charcoal/60 font-sans mt-1 text-sm">Catálogo de Sunrise Discovery</p>
+        <div className="flex items-start justify-between mb-6 gap-3 flex-wrap">
+          <div>
+            <h1 className="font-display text-3xl md:text-4xl text-brand-dark leading-tight">Propiedades</h1>
+            <p className="text-brand-charcoal/60 font-sans mt-1 text-sm">Catálogo de Sunrise Discovery</p>
+          </div>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-brand-teal text-white text-sm font-medium font-sans rounded-button shadow-[0_4px_14px_-4px_rgba(3,165,175,0.5)] hover:bg-brand-deep hover:-translate-y-px active:translate-y-0 transition-all duration-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Nueva propiedad
+          </button>
         </div>
 
         {/* Bloques de color tipo Monday */}
@@ -208,6 +221,8 @@ export function PropertiesPage() {
           </div>
         )}
       </div>
+
+      <NewPropertyModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   )
 }

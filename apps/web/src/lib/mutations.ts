@@ -4,6 +4,7 @@ import type {
   ClientUpdate,
   ClientCommentInsert,
   StageHistoryInsert,
+  PropertyInsert,
 } from '@/types/database'
 import type { Database } from '@/types/database'
 
@@ -31,6 +32,13 @@ export async function addClientAttachment(values: ClientAttachmentInsert): Promi
 
 export async function addPushSubscription(values: PushSubscriptionInsert): Promise<void> {
   const { error } = await raw.from('push_subscriptions').upsert(values, { onConflict: 'endpoint' })
+  if (error) throw new Error(error.message)
+}
+
+// ── Property mutations ───────────────────────────────────────────────────────
+
+export async function createProperty(values: PropertyInsert): Promise<void> {
+  const { error } = await raw.from('properties').insert(values)
   if (error) throw new Error(error.message)
 }
 

@@ -11,9 +11,19 @@ export interface ClientFilters {
   to?: string
 }
 
+export type LinkedProperty = {
+  id: string
+  name: string
+  price_label: string | null
+  size_label: string | null
+  location: string | null
+  source_url: string | null
+}
+
 export type ClientWithProfile = Client & {
   profiles: { full_name: string; avatar_url: string | null } | null
   pipeline_stages: { name: string; color: string } | null
+  property?: LinkedProperty | null
 }
 
 export function useClients(filters: ClientFilters = {}) {
@@ -56,7 +66,8 @@ export function useClient(id: string) {
         .select(`
           *,
           profiles:assigned_to ( full_name, avatar_url ),
-          pipeline_stages:stage_id ( name, color )
+          pipeline_stages:stage_id ( name, color ),
+          property:property_id ( id, name, price_label, size_label, location, source_url )
         `)
         .eq('id', id)
         .single()

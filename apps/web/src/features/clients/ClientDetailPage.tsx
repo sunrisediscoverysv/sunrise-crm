@@ -117,7 +117,7 @@ export function ClientDetailPage() {
 
   const stage = client.pipeline_stages as { name: string; color: string } | null
   const assignee = client.profiles as { full_name: string; avatar_url: string | null } | null
-  const linkedProperty = properties.find(p => p.id === client.property_id) ?? null
+  const linkedProperty = client.property ?? properties.find(p => p.id === client.property_id) ?? null
 
   return (
     <div className="h-full overflow-y-auto bg-[#f6f8f9] bg-app">
