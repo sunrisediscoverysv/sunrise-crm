@@ -27,6 +27,23 @@ export async function getPushState(): Promise<PushState> {
   return sub ? 'subscribed' : 'idle'
 }
 
+/** Si el navegador ya está suscrito, reasegura que la suscripción esté guardada en la DB. */
+export async function syncExistingSubscription(userId: string | null): Promise<boolean> {
+  if (!pushSupported()) return false
+  const reg = await navigator.serviceWorker.ready
+  const sub = await reg.pushManager.getSubscription()
+  if (!sub) return false
+  const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } }
+  await addPushSubscription({
+    user_id: userId,
+    endpoint: json.endpoint,
+    p256dh: json.keys.p256dh,
+    auth: json.keys.auth,
+    user_agent: navigator.userAgent,
+  })
+  return true
+}
+
 export async function subscribeToPush(userId: string | null): Promise<void> {
   if (!pushSupported()) throw new Error('Este navegador no soporta notificaciones push.')
   const permission = await Notification.requestPermission()
