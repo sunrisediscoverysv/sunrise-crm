@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import * as webpush from 'jsr:@negrel/webpush@0.3.0'
 
-const VERSION = 'diag-2'
+const VERSION = 'diag-3'
 
 function b64urlToBytes(s: string): Uint8Array {
   const pad = '='.repeat((4 - (s.length % 4)) % 4)
@@ -43,6 +43,16 @@ Deno.serve(async (req: Request) => {
     const x = bytesToB64url(pub.slice(1, 33))
     const y = bytesToB64url(pub.slice(33, 65))
     const d = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
+
+    // Diagnóstico: probar qué importaciones de crypto soporta el runtime
+    if (body.cryptotest) {
+      const r: Record<string, string> = {}
+      try { await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x, y }, { name: 'ECDSA', namedCurve: 'P-256' }, true, ['verify']); r.pubJwkEcdsa = 'ok' } catch (e) { r.pubJwkEcdsa = String((e as Error).message) }
+      try { await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x, y, d }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']); r.privJwkEcdsa = 'ok' } catch (e) { r.privJwkEcdsa = String((e as Error).message) }
+      try { await crypto.subtle.importKey('raw', pub, { name: 'ECDH', namedCurve: 'P-256' }, true, []); r.pubRawEcdh = 'ok' } catch (e) { r.pubRawEcdh = String((e as Error).message) }
+      try { await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']); r.genEcdh = 'ok' } catch (e) { r.genEcdh = String((e as Error).message) }
+      return new Response(JSON.stringify({ cryptotest: r, version: VERSION }), { headers: { 'Content-Type': 'application/json' } })
+    }
 
     step = 'importVapidKeys'
     const vapidKeys = await webpush.importVapidKeys({
