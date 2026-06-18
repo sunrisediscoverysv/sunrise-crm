@@ -53,9 +53,9 @@ Deno.serve(async (req: Request) => {
     const d = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
 
     const vapidKeys = await webpush.importVapidKeys({
-      publicKey: { kty: 'EC', crv: 'P-256', x, y, ext: true, key_ops: [] },
-      privateKey: { kty: 'EC', crv: 'P-256', x, y, d, ext: true, key_ops: ['sign'] },
-    })
+      publicKey: { kty: 'EC', crv: 'P-256', x, y },
+      privateKey: { kty: 'EC', crv: 'P-256', x, y, d },
+    }, { extractable: false })
 
     const appServer = await webpush.ApplicationServer.new({
       contactInformation: Deno.env.get('VAPID_SUBJECT') ?? 'mailto:info@sunrisediscovery.com',
