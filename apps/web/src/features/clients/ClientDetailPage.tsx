@@ -7,6 +7,7 @@ import { useProfiles } from '@/hooks/useProfiles'
 import { useAuth } from '@/features/auth/AuthContext'
 import { ClientComments } from './ClientComments'
 import { ClientMessages } from './ClientMessages'
+import { ClientAttachments } from './ClientAttachments'
 import { Badge, ChannelBadge } from '@/components/Badge'
 import { Avatar } from '@/components/Avatar'
 import { Select } from '@/components/Select'
@@ -273,6 +274,9 @@ export function ClientDetailPage() {
           </div>
           <div className="bg-white rounded-card shadow-card p-5">
             <ClientComments clientId={client.id} />
+          </div>
+          <div className="bg-white rounded-card shadow-card p-5">
+            <ClientAttachments clientId={client.id} />
           </div>
         </div>
       </div>

@@ -17,6 +17,14 @@ const raw = supabase as any
 type PipelineStageRow = Database['public']['Tables']['pipeline_stages']['Row']
 type PipelineStageInsert = Database['public']['Tables']['pipeline_stages']['Insert']
 type PipelineStageUpdate = Database['public']['Tables']['pipeline_stages']['Update']
+type ClientAttachmentInsert = Database['public']['Tables']['client_attachments']['Insert']
+
+// ── Attachment mutations ─────────────────────────────────────────────────────
+
+export async function addClientAttachment(values: ClientAttachmentInsert): Promise<void> {
+  const { error } = await raw.from('client_attachments').insert(values)
+  if (error) throw new Error(error.message)
+}
 
 // ── Client mutations ──────────────────────────────────────────────────────────
 

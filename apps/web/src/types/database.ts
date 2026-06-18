@@ -78,6 +78,7 @@ export type Database = {
           updated_at: string
           last_contact_at: string | null
           follow_up_at: string | null
+          property_id: string | null
         }
         Insert: {
           id?: string
@@ -96,6 +97,7 @@ export type Database = {
           updated_at?: string
           last_contact_at?: string | null
           follow_up_at?: string | null
+          property_id?: string | null
         }
         Update: {
           id?: string
@@ -114,10 +116,12 @@ export type Database = {
           updated_at?: string
           last_contact_at?: string | null
           follow_up_at?: string | null
+          property_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "clients_stage_id_fkey"; columns: ["stage_id"]; isOneToOne: false; referencedRelation: "pipeline_stages"; referencedColumns: ["id"] },
-          { foreignKeyName: "clients_assigned_to_fkey"; columns: ["assigned_to"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }
+          { foreignKeyName: "clients_assigned_to_fkey"; columns: ["assigned_to"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "clients_property_id_fkey"; columns: ["property_id"]; isOneToOne: false; referencedRelation: "properties"; referencedColumns: ["id"] }
         ]
       }
       client_comments: {
@@ -209,6 +213,92 @@ export type Database = {
           { foreignKeyName: "messages_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clients"; referencedColumns: ["id"] }
         ]
       }
+      properties: {
+        Row: {
+          id: string
+          name: string
+          slug: string | null
+          location: string | null
+          property_type: 'land' | 'house' | 'department' | 'lot' | 'other'
+          price_label: string | null
+          price_usd: number | null
+          size_label: string | null
+          status: 'available' | 'reserved' | 'sold' | 'off_market'
+          description: string | null
+          image_url: string | null
+          source_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug?: string | null
+          location?: string | null
+          property_type?: 'land' | 'house' | 'department' | 'lot' | 'other'
+          price_label?: string | null
+          price_usd?: number | null
+          size_label?: string | null
+          status?: 'available' | 'reserved' | 'sold' | 'off_market'
+          description?: string | null
+          image_url?: string | null
+          source_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string | null
+          location?: string | null
+          property_type?: 'land' | 'house' | 'department' | 'lot' | 'other'
+          price_label?: string | null
+          price_usd?: number | null
+          size_label?: string | null
+          status?: 'available' | 'reserved' | 'sold' | 'off_market'
+          description?: string | null
+          image_url?: string | null
+          source_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      client_attachments: {
+        Row: {
+          id: string
+          client_id: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          mime_type: string | null
+          uploaded_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          mime_type?: string | null
+          uploaded_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          mime_type?: string | null
+          uploaded_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "client_attachments_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clients"; referencedColumns: ["id"] }
+        ]
+      }
     }
     Views: Record<string, { Row: Record<string, unknown> }>
     Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }>
@@ -229,8 +319,12 @@ export type Client = Database['public']['Tables']['clients']['Row']
 export type ClientComment = Database['public']['Tables']['client_comments']['Row']
 export type StageHistory = Database['public']['Tables']['stage_history']['Row']
 export type Message = Database['public']['Tables']['messages']['Row']
+export type Property = Database['public']['Tables']['properties']['Row']
+export type ClientAttachment = Database['public']['Tables']['client_attachments']['Row']
 
 export type ClientInsert = Database['public']['Tables']['clients']['Insert']
+export type PropertyInsert = Database['public']['Tables']['properties']['Insert']
+export type PropertyUpdate = Database['public']['Tables']['properties']['Update']
 export type ClientUpdate = Database['public']['Tables']['clients']['Update']
 export type ClientCommentInsert = Database['public']['Tables']['client_comments']['Insert']
 export type StageHistoryInsert = Database['public']['Tables']['stage_history']['Insert']

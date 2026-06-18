@@ -36,6 +36,15 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    to: '/properties',
+    label: 'Propiedades',
+    icon: (
+      <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3M9 9v.01M9 12v.01M9 15v.01M9 18v.01" />
+      </svg>
+    ),
+  },
 ]
 
 const adminNavItems = [

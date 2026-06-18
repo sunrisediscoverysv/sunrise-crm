@@ -7,6 +7,7 @@ import { DashboardPage } from './features/dashboard/DashboardPage'
 import { PipelinePage } from './features/pipeline/PipelinePage'
 import { ClientsPage } from './features/clients/ClientsPage'
 import { ClientDetailPage } from './features/clients/ClientDetailPage'
+import { PropertiesPage } from './features/properties/PropertiesPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
                   <Route path="/pipeline" element={<PipelinePage />} />
                   <Route path="/clients" element={<ClientsPage />} />
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
+                  <Route path="/properties" element={<PropertiesPage />} />
                   <Route
                     path="/settings"
                     element={
