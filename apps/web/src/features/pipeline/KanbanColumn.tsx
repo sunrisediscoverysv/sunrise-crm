@@ -10,7 +10,7 @@ interface KanbanColumnProps {
 
 export function KanbanColumn({ stage, clients }: KanbanColumnProps) {
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col w-full md:h-full">
       {/* Column header — solid Monday-style group bar */}
       <div
         className="flex items-center gap-2.5 mb-2.5 px-3.5 py-2.5 rounded-xl shadow-sm"
@@ -31,7 +31,7 @@ export function KanbanColumn({ stage, clients }: KanbanColumnProps) {
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={[
-              'flex flex-col gap-2.5 flex-1 rounded-b-card p-2.5 min-h-[80px] transition-colors duration-150',
+              'flex flex-col gap-2.5 flex-1 rounded-b-card p-2.5 min-h-[56px] md:min-h-[80px] transition-colors duration-150',
               snapshot.isDraggingOver
                 ? 'bg-brand-teal/5 ring-1 ring-brand-teal/30'
                 : 'bg-[#ededef]',

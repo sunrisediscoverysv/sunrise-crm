@@ -166,7 +166,7 @@ export function PipelinePage() {
         <div className="flex-1 overflow-auto">
           <DragDropContext onDragEnd={onDragEnd}>
             <div
-              className="grid gap-3 p-4 md:gap-4 md:p-6 min-h-full auto-rows-fr"
+              className="grid gap-3 p-4 md:gap-4 md:p-6 min-h-full md:auto-rows-fr"
               style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}
             >
               {stages.map(stage => (
