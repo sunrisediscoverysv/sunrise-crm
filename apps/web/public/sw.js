@@ -1,6 +1,6 @@
 // Service worker — Sunrise CRM PWA
 // Navegación: network-first (para tomar deploys nuevos). Assets: stale-while-revalidate.
-const CACHE = 'sunrise-crm-v1'
+const CACHE = 'sunrise-crm-v2'
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png']
 
 self.addEventListener('install', event => {

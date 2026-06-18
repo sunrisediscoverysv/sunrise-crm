@@ -83,7 +83,7 @@ export function DashboardPage() {
         {/* Stat cards — Monday-style solid color blocks */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
 
-          <div className="col-span-2 lg:col-span-1 bg-stat-dark shadow-stat-dark rounded-card p-6 flex flex-col gap-4 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+          <div className="col-span-2 lg:col-span-1 bg-gradient-to-br from-brand-deep via-brand-dark to-[#0d3340] shadow-stat-dark rounded-card p-6 flex flex-col gap-4 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
             <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-brand-teal/25 blur-2xl" />
             <div className="flex items-center gap-2 relative">
               <span className="text-xl">📊</span>

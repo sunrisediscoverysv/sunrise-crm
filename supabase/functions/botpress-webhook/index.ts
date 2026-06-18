@@ -28,6 +28,17 @@ function timingSafeEqual(a: string, b: string): boolean {
   return result === 0
 }
 
+// Normaliza texto para comparar nombres de propiedades:
+// minúsculas, sin acentos, guiones/en-dash → espacio, espacios colapsados.
+function normalize(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[-–—_/]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 const FIELD_MAX_LENGTHS: Record<string, number> = {
   full_name: 255,
   phone: 30,
@@ -106,16 +117,16 @@ Deno.serve(async (req: Request) => {
   // Best-effort: vincular la propiedad de interés (texto libre) a una del catálogo
   let matchedPropertyId: string | null = null
   if (payload.property_of_interest) {
-    const needle = payload.property_of_interest.toLowerCase().trim()
+    const needle = normalize(payload.property_of_interest)
     const { data: props } = await supabase.from('properties').select('id, name, slug')
-    if (props) {
-      const hit = (props as { id: string; name: string; slug: string | null }[]).find(p => {
-        const name = p.name.toLowerCase()
-        const slugWords = p.slug ? p.slug.replace(/-+/g, ' ') : ''
-        return name.includes(needle) || needle.includes(name) || (slugWords && needle.includes(slugWords))
-      })
-      matchedPropertyId = hit?.id ?? null
-    }
+    const hit = (props ?? []).find((p: { id: string; name: string; slug: string | null }) => {
+      const name = normalize(p.name)
+      const slug = p.slug ? normalize(p.slug) : ''
+      return (name && (name.includes(needle) || needle.includes(name))) ||
+             (slug && (slug.includes(needle) || needle.includes(slug)))
+    })
+    matchedPropertyId = (hit as { id: string } | undefined)?.id ?? null
+    console.log(`[autovínculo] "${payload.property_of_interest}" → ${matchedPropertyId ?? 'sin match'} (${props?.length ?? 0} propiedades en catálogo)`)
   }
 
   let clientId: string

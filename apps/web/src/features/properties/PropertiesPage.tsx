@@ -129,7 +129,7 @@ export function PropertiesPage() {
 
         {/* Bloques de color tipo Monday */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-          <div className="bg-stat-dark shadow-stat-dark rounded-card p-5 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+          <div className="bg-gradient-to-br from-brand-deep via-brand-dark to-[#0d3340] shadow-stat-dark rounded-card p-5 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
             <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-brand-teal/25 blur-2xl" />
             <div className="flex items-center gap-2 relative"><span className="text-lg">🏝️</span><p className="text-white/70 text-[11px] font-sans font-bold uppercase tracking-wider">Propiedades</p></div>
             <p className="font-display text-4xl text-white leading-none tabular-nums mt-3 relative">{properties.length}</p>
