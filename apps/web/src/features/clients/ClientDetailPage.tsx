@@ -80,6 +80,7 @@ export function ClientDetailPage() {
     mutationFn: () => deleteClient(id!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       navigate('/clients')
     },
   })
@@ -107,7 +108,7 @@ export function ClientDetailPage() {
   const assignee = client.profiles as { full_name: string; avatar_url: string | null } | null
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto bg-[#f6f8f9] bg-app">
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm font-sans mb-6">
@@ -123,7 +124,7 @@ export function ClientDetailPage() {
         <Avatar name={client.full_name} size="lg" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="font-sans font-bold text-3xl text-brand-dark">{client.full_name ?? 'Sin nombre'}</h1>
+            <h1 className="font-display text-3xl md:text-4xl text-brand-dark leading-tight">{client.full_name ?? 'Sin nombre'}</h1>
             <ChannelBadge channel={client.channel} />
             {stage && <Badge color={stage.color}>{stage.name}</Badge>}
           </div>
@@ -137,7 +138,7 @@ export function ClientDetailPage() {
         {/* Left column */}
         <div className="lg:col-span-1 flex flex-col gap-5">
           {/* Contact info */}
-          <div className="bg-white rounded-card border border-brand-light-gray p-5">
+          <div className="bg-white rounded-card shadow-card p-5">
             <h3 className="text-xs font-semibold font-sans text-brand-charcoal/45 uppercase tracking-wider mb-4">Información de contacto</h3>
             <dl className="flex flex-col gap-3">
               <InfoRow label="Teléfono" value={client.phone} />
@@ -157,7 +158,7 @@ export function ClientDetailPage() {
           </div>
 
           {/* Stage selector */}
-          <div className="bg-white rounded-card border border-brand-light-gray p-5">
+          <div className="bg-white rounded-card shadow-card p-5">
             <h3 className="text-xs font-semibold font-sans text-brand-charcoal/45 uppercase tracking-wider mb-3">Etapa del pipeline</h3>
             <Select
               options={stages.map(s => ({ value: s.id, label: s.name }))}
@@ -173,7 +174,7 @@ export function ClientDetailPage() {
           </div>
 
           {/* Follow-up date */}
-          <div className="bg-white rounded-card border border-brand-light-gray p-5">
+          <div className="bg-white rounded-card shadow-card p-5">
             <h3 className="text-xs font-semibold font-sans text-brand-charcoal/45 uppercase tracking-wider mb-3">Próximo seguimiento</h3>
             {client.follow_up_at && (
               <p className={[
@@ -204,7 +205,7 @@ export function ClientDetailPage() {
           </div>
 
           {/* Agent selector */}
-          <div className="bg-white rounded-card border border-brand-light-gray p-5">
+          <div className="bg-white rounded-card shadow-card p-5">
             <h3 className="text-xs font-semibold font-sans text-brand-charcoal/45 uppercase tracking-wider mb-3">Agente asignado</h3>
             <div className="flex items-center gap-3 mb-3">
               {assignee ? (
@@ -228,7 +229,7 @@ export function ClientDetailPage() {
           </div>
 
           {/* Delete */}
-          <div className="bg-white rounded-card border border-brand-light-gray p-5">
+          <div className="bg-white rounded-card shadow-card p-5">
             <h3 className="text-xs font-semibold font-sans text-brand-charcoal/45 uppercase tracking-wider mb-3">Zona de peligro</h3>
             {!confirmingDelete ? (
               <button
@@ -267,10 +268,10 @@ export function ClientDetailPage() {
 
         {/* Right column */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          <div className="bg-white rounded-card border border-brand-light-gray p-5">
+          <div className="bg-white rounded-card shadow-card p-5">
             <ClientMessages clientId={client.id} />
           </div>
-          <div className="bg-white rounded-card border border-brand-light-gray p-5">
+          <div className="bg-white rounded-card shadow-card p-5">
             <ClientComments clientId={client.id} />
           </div>
         </div>

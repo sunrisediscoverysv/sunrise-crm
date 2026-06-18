@@ -49,12 +49,12 @@ export function ClientsPage() {
   const { data: agents = [] } = useProfiles()
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto bg-[#f6f8f9] bg-app">
       <div className="p-4 md:p-8 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-5 md:mb-6">
           <div>
-            <h1 className="font-sans font-semibold text-2xl md:text-3xl text-brand-dark">Clientes</h1>
-            <p className="text-brand-charcoal/60 font-sans mt-0.5 text-sm">
+            <h1 className="font-display text-3xl md:text-4xl text-brand-dark leading-tight">Clientes</h1>
+            <p className="text-brand-charcoal/60 font-sans mt-1 text-sm">
               {clients.length} resultado{clients.length !== 1 ? 's' : ''}
             </p>
           </div>
@@ -71,7 +71,7 @@ export function ClientsPage() {
             </button>
             <button
               onClick={() => setModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-brand-teal text-white text-sm font-medium font-sans rounded-button hover:bg-brand-deep transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 bg-brand-teal text-white text-sm font-medium font-sans rounded-button shadow-[0_4px_14px_-4px_rgba(3,165,175,0.5)] hover:bg-brand-deep hover:-translate-y-px active:translate-y-0 transition-all duration-200"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

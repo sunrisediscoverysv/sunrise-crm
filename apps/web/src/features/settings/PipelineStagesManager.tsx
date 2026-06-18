@@ -42,7 +42,7 @@ function StageRow({ stage, isFirst, isLast, onMoveUp, onMoveDown, onSave, onDele
   }
 
   return (
-    <div className="flex items-center gap-3 bg-white rounded-card border border-brand-light-gray p-4">
+    <div className="flex items-center gap-3 bg-white rounded-card shadow-card p-4">
       {/* Reorder controls */}
       <div className="flex flex-col gap-0.5 flex-shrink-0">
         <button

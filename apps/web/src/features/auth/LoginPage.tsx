@@ -34,20 +34,24 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-brand-dark flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#0f3b49] bg-login flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex justify-center mb-10">
+        <div className="flex flex-col items-center mb-9">
           <img
             src="https://cdn.prod.website-files.com/6a08b2c521f08afd837587ad/6a08b3386c591bbe5b0d3425_Group%201171274935.svg"
             alt="Sunrise Discovery"
             className="h-10 brightness-0 invert"
           />
+          <div className="flex items-center gap-1.5 mt-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-teal/70" />
+            <span className="text-white/40 text-[10px] font-sans tracking-[0.3em] uppercase">CRM</span>
+          </div>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-card p-8 shadow-lg">
-          <h1 className="font-sans font-semibold text-2xl text-brand-dark mb-1">Acceso al CRM</h1>
+        <div className="bg-white rounded-card p-8 shadow-2xl ring-1 ring-white/10">
+          <h1 className="font-display text-3xl text-brand-dark mb-1.5">Acceso al CRM</h1>
           <p className="text-sm text-brand-charcoal/60 font-sans mb-7">
             Ingresa con tu cuenta del equipo
           </p>

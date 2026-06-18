@@ -14,7 +14,7 @@ interface ClientsTableProps {
 export function ClientsTable({ clients, loading }: ClientsTableProps) {
   if (loading) {
     return (
-      <div className="bg-white rounded-card border border-brand-light-gray overflow-hidden">
+      <div className="bg-white rounded-card shadow-card overflow-hidden">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-brand-light-gray last:border-0">
             <div className="h-4 bg-brand-light-gray rounded animate-pulse flex-1" />
@@ -28,7 +28,7 @@ export function ClientsTable({ clients, loading }: ClientsTableProps) {
 
   if (clients.length === 0) {
     return (
-      <div className="bg-white rounded-card border border-brand-light-gray">
+      <div className="bg-white rounded-card shadow-card">
         <EmptyState
           icon={
             <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
@@ -43,7 +43,7 @@ export function ClientsTable({ clients, loading }: ClientsTableProps) {
   }
 
   return (
-    <div className="bg-white rounded-card border border-brand-light-gray overflow-hidden">
+    <div className="bg-white rounded-card shadow-card overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-brand-light-gray bg-[#f7f8f9]">

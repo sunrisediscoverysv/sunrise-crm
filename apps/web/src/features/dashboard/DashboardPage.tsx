@@ -67,44 +67,48 @@ export function DashboardPage() {
   const conversionRate = totalClients > 0 ? Math.round((wonCount / totalClients) * 100) : 0
 
   return (
-    <div className="h-full overflow-y-auto bg-[#f5f6f8]">
+    <div className="h-full overflow-y-auto bg-[#f6f8f9] bg-app">
       <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-10">
 
         {/* Greeting */}
         <div className="mb-8">
-          <p className="text-xs font-sans text-brand-charcoal/40 uppercase tracking-widest mb-2">
+          <p className="text-xs font-sans text-brand-charcoal/40 uppercase tracking-[0.2em] mb-2.5">
             {new Date().toLocaleDateString('es-SV', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <h1 className="font-sans font-bold text-3xl md:text-4xl text-brand-dark leading-tight">
+          <h1 className="font-display text-4xl md:text-5xl text-brand-dark leading-[1.05]">
             {greeting},{' '}
-            <span className="text-brand-teal">{firstName}</span>
+            <span className="text-brand-teal italic">{firstName}</span>
           </h1>
         </div>
 
         {/* Stat cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
 
-          <div className="col-span-2 lg:col-span-1 bg-brand-dark rounded-card p-6 flex flex-col gap-4">
-            <p className="text-white/50 text-[11px] font-sans uppercase tracking-widest">Total leads</p>
-            <p className="font-sans font-bold text-5xl text-white leading-none tabular-nums">{totalClients}</p>
-            <div className="mt-auto pt-3 border-t border-white/10">
-              <p className="text-white/30 text-xs font-sans">clientes registrados</p>
+          <div className="col-span-2 lg:col-span-1 bg-stat-dark shadow-stat-dark rounded-card p-6 flex flex-col gap-4 relative overflow-hidden">
+            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-brand-teal/20 blur-2xl" />
+            <p className="text-white/55 text-[11px] font-sans uppercase tracking-[0.18em] relative">Total leads</p>
+            <p className="font-display text-6xl text-white leading-none tabular-nums relative">{totalClients}</p>
+            <div className="mt-auto pt-3 border-t border-white/10 relative">
+              <p className="text-white/40 text-xs font-sans">clientes registrados</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-card p-6 border border-brand-light-gray flex flex-col gap-3">
-            <p className="text-brand-charcoal/40 text-[11px] font-sans uppercase tracking-widest">Ganados</p>
-            <p className="font-sans font-bold text-4xl text-brand-gold leading-none tabular-nums">{wonCount}</p>
+          <div className="group bg-white rounded-card p-6 shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col gap-3 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-gold to-brand-gold/40" />
+            <p className="text-brand-charcoal/40 text-[11px] font-sans uppercase tracking-[0.18em]">Ganados</p>
+            <p className="font-display text-5xl text-brand-gold leading-none tabular-nums">{wonCount}</p>
           </div>
 
-          <div className="bg-white rounded-card p-6 border border-brand-light-gray flex flex-col gap-3">
-            <p className="text-brand-charcoal/40 text-[11px] font-sans uppercase tracking-widest">Últimos 7 días</p>
-            <p className="font-sans font-bold text-4xl text-brand-teal leading-none tabular-nums">{recentLeads?.length ?? 0}</p>
+          <div className="group bg-white rounded-card p-6 shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col gap-3 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-teal to-brand-teal/40" />
+            <p className="text-brand-charcoal/40 text-[11px] font-sans uppercase tracking-[0.18em]">Últimos 7 días</p>
+            <p className="font-display text-5xl text-brand-teal leading-none tabular-nums">{recentLeads?.length ?? 0}</p>
           </div>
 
-          <div className="bg-white rounded-card p-6 border border-brand-light-gray flex flex-col gap-3">
-            <p className="text-brand-charcoal/40 text-[11px] font-sans uppercase tracking-widest">Conversión</p>
-            <p className="font-sans font-bold text-4xl text-brand-dark leading-none tabular-nums">
+          <div className="group bg-white rounded-card p-6 shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col gap-3 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-dark to-brand-dark/30" />
+            <p className="text-brand-charcoal/40 text-[11px] font-sans uppercase tracking-[0.18em]">Conversión</p>
+            <p className="font-display text-5xl text-brand-dark leading-none tabular-nums">
               {conversionRate}<span className="text-2xl text-brand-charcoal/25">%</span>
             </p>
           </div>
@@ -113,7 +117,7 @@ export function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
           {/* Pipeline por etapa */}
-          <div className="lg:col-span-3 bg-white rounded-card border border-brand-light-gray p-6">
+          <div className="lg:col-span-3 bg-white rounded-card shadow-card p-6">
             <div className="flex items-center justify-between mb-6">
               <p className="text-sm font-semibold font-sans text-brand-dark">Pipeline por etapa</p>
               <Link to="/pipeline" className="text-xs font-sans text-brand-teal hover:text-brand-mid font-medium">Ver pipeline →</Link>
@@ -157,7 +161,7 @@ export function DashboardPage() {
           </div>
 
           {/* Leads recientes */}
-          <div className="lg:col-span-2 bg-white rounded-card border border-brand-light-gray p-6">
+          <div className="lg:col-span-2 bg-white rounded-card shadow-card p-6">
             <div className="flex items-center justify-between mb-5">
               <p className="text-sm font-semibold font-sans text-brand-dark">Leads recientes</p>
               <Link to="/clients" className="text-xs font-sans text-brand-teal hover:text-brand-mid font-medium">Ver todos →</Link>

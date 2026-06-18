@@ -83,13 +83,13 @@ export function PipelinePage() {
   const activeFilters = [filterChannel, filterAgent].filter(Boolean).length
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#f6f8f9] bg-app">
       {/* Header */}
-      <div className="px-4 md:px-8 pt-5 md:pt-6 pb-3 bg-[#f7f8f9] border-b border-brand-light-gray flex-shrink-0">
+      <div className="px-4 md:px-8 pt-5 md:pt-6 pb-3 bg-white/70 backdrop-blur-sm border-b border-brand-light-gray flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="font-sans font-semibold text-2xl md:text-3xl text-brand-dark">Pipeline</h1>
-            <p className="text-brand-charcoal/60 font-sans mt-0.5 text-sm">
+            <h1 className="font-display text-3xl md:text-4xl text-brand-dark leading-tight">Pipeline</h1>
+            <p className="text-brand-charcoal/60 font-sans mt-1 text-sm">
               {filteredClients.length} cliente{filteredClients.length !== 1 ? 's' : ''}
               {activeFilters > 0 && <span className="text-brand-teal"> · {activeFilters} filtro{activeFilters > 1 ? 's' : ''} activo{activeFilters > 1 ? 's' : ''}</span>}
             </p>
@@ -102,7 +102,7 @@ export function PipelinePage() {
             )}
             <button
               onClick={() => setModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-brand-teal text-white text-sm font-medium font-sans rounded-button hover:bg-brand-deep transition-colors"
+              className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-brand-teal text-white text-sm font-medium font-sans rounded-button shadow-[0_4px_14px_-4px_rgba(3,165,175,0.5)] hover:bg-brand-deep hover:-translate-y-px active:translate-y-0 transition-all duration-200"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

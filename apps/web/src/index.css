@@ -4,10 +4,15 @@
 
 @layer base {
   html {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Outfit', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+  }
+
+  /* Editorial display headings keep their tight, premium rhythm */
+  .font-display {
+    letter-spacing: -0.01em;
   }
 
   /* Custom scrollbar */

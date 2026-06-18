@@ -41,7 +41,7 @@ function TeamTab() {
       {profiles.map(profile => (
         <div
           key={profile.id}
-          className="flex items-center gap-3 bg-white rounded-card border border-brand-light-gray px-4 py-3"
+          className="flex items-center gap-3 bg-white rounded-card shadow-card px-4 py-3"
         >
           <Avatar name={profile.full_name} src={profile.avatar_url} size="md" />
           <div className="flex-1 min-w-0">
@@ -65,12 +65,12 @@ export function SettingsPage() {
   const [tab, setTab] = useState<Tab>('pipeline')
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto bg-[#f6f8f9] bg-app">
     <div className="p-4 md:p-8 max-w-2xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="font-sans font-bold text-3xl text-brand-dark">Configuración</h1>
-        <p className="text-brand-charcoal/60 font-sans mt-1 text-sm">
+        <h1 className="font-display text-3xl md:text-4xl text-brand-dark leading-tight">Configuración</h1>
+        <p className="text-brand-charcoal/60 font-sans mt-1.5 text-sm">
           Solo los administradores pueden acceder a esta sección.
         </p>
       </div>
@@ -97,7 +97,7 @@ export function SettingsPage() {
       {tab === 'pipeline' && (
         <section>
           <div className="mb-4">
-            <h2 className="font-sans font-semibold text-xl text-brand-dark">Etapas del pipeline</h2>
+            <h2 className="font-display text-2xl text-brand-dark">Etapas del pipeline</h2>
             <p className="text-sm text-brand-charcoal/50 font-sans mt-0.5">
               Define las etapas del embudo de ventas. El orden aquí es el orden en el Kanban.
             </p>
@@ -109,7 +109,7 @@ export function SettingsPage() {
       {tab === 'team' && (
         <section>
           <div className="mb-4">
-            <h2 className="font-sans font-semibold text-xl text-brand-dark">Miembros del equipo</h2>
+            <h2 className="font-display text-2xl text-brand-dark">Miembros del equipo</h2>
             <p className="text-sm text-brand-charcoal/50 font-sans mt-0.5">
               Usuarios registrados en el CRM. Los nuevos usuarios se crean desde Supabase Auth.
             </p>
