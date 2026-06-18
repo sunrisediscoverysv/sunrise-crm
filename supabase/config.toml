@@ -69,5 +69,8 @@ enable_confirmations = false
 [functions.botpress-webhook]
 verify_jwt = false
 
+[functions.webflow-webhook]
+verify_jwt = false
+
 [analytics]
 enabled = false
