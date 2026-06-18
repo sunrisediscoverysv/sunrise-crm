@@ -1,21 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import * as webpush from 'jsr:@negrel/webpush@0.3.0'
+import webpush from 'npm:web-push@3.6.7'
 
-const VERSION = 'diag-3'
-
-function b64urlToBytes(s: string): Uint8Array {
-  const pad = '='.repeat((4 - (s.length % 4)) % 4)
-  const b64 = (s + pad).replace(/-/g, '+').replace(/_/g, '/')
-  const bin = atob(b64)
-  const arr = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i)
-  return arr
-}
-function bytesToB64url(b: Uint8Array): string {
-  let bin = ''
-  for (let i = 0; i < b.length; i++) bin += String.fromCharCode(b[i])
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
+const VERSION = 'webpush-1'
 
 Deno.serve(async (req: Request) => {
   const secret = Deno.env.get('PUSH_SECRET')
@@ -38,33 +24,12 @@ Deno.serve(async (req: Request) => {
       title = body.title ?? title; message = body.body ?? ''; url = body.url ?? '/'
     }
 
-    step = 'vapid-decode'
-    const pub = b64urlToBytes(Deno.env.get('VAPID_PUBLIC_KEY') ?? '')
-    const x = bytesToB64url(pub.slice(1, 33))
-    const y = bytesToB64url(pub.slice(33, 65))
-    const d = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
-
-    // Diagnóstico: probar qué importaciones de crypto soporta el runtime
-    if (body.cryptotest) {
-      const r: Record<string, string> = {}
-      try { await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x, y }, { name: 'ECDSA', namedCurve: 'P-256' }, true, ['verify']); r.pubJwkEcdsa = 'ok' } catch (e) { r.pubJwkEcdsa = String((e as Error).message) }
-      try { await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x, y, d }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']); r.privJwkEcdsa = 'ok' } catch (e) { r.privJwkEcdsa = String((e as Error).message) }
-      try { await crypto.subtle.importKey('raw', pub, { name: 'ECDH', namedCurve: 'P-256' }, true, []); r.pubRawEcdh = 'ok' } catch (e) { r.pubRawEcdh = String((e as Error).message) }
-      try { await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']); r.genEcdh = 'ok' } catch (e) { r.genEcdh = String((e as Error).message) }
-      return new Response(JSON.stringify({ cryptotest: r, version: VERSION }), { headers: { 'Content-Type': 'application/json' } })
-    }
-
-    step = 'importVapidKeys'
-    const vapidKeys = await webpush.importVapidKeys({
-      publicKey: { kty: 'EC', crv: 'P-256', x, y, ext: true, key_ops: ['verify'] },
-      privateKey: { kty: 'EC', crv: 'P-256', x, y, d, ext: true, key_ops: ['sign'] },
-    }, { extractable: false })
-
-    step = 'appServer'
-    const appServer = await webpush.ApplicationServer.new({
-      contactInformation: Deno.env.get('VAPID_SUBJECT') ?? 'mailto:info@sunrisediscovery.com',
-      vapidKeys,
-    })
+    step = 'setVapidDetails'
+    webpush.setVapidDetails(
+      Deno.env.get('VAPID_SUBJECT') ?? 'mailto:info@sunrisediscovery.com',
+      Deno.env.get('VAPID_PUBLIC_KEY') ?? '',
+      Deno.env.get('VAPID_PRIVATE_KEY') ?? '',
+    )
 
     step = 'query-subs'
     const supabase = createClient(
@@ -77,28 +42,30 @@ Deno.serve(async (req: Request) => {
 
     step = 'send'
     let sent = 0, removed = 0
+    let lastError: string | null = null
     for (const s of subs ?? []) {
       try {
-        const subscriber = appServer.subscribe({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } })
-        await subscriber.pushTextMessage(payload, {})
+        await webpush.sendNotification(
+          { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+          payload,
+        )
         sent++
       } catch (e) {
-        const status = e?.response?.status
-        if (status === 404 || status === 410) {
+        const code = (e as { statusCode?: number }).statusCode
+        lastError = String((e as { body?: string }).body ?? (e as Error).message ?? e)
+        if (code === 404 || code === 410) {
           await supabase.from('push_subscriptions').delete().eq('endpoint', s.endpoint)
           removed++
-        } else {
-          console.error('push send error:', e?.message ?? e)
         }
       }
     }
 
-    return new Response(JSON.stringify({ ok: true, version: VERSION, subs: subs?.length ?? 0, sent, removed }), {
+    return new Response(JSON.stringify({ ok: true, version: VERSION, subs: subs?.length ?? 0, sent, removed, lastError }), {
       headers: { 'Content-Type': 'application/json' },
     })
   } catch (e) {
-    console.error('send-push fatal:', step, e?.message ?? e)
-    return new Response(JSON.stringify({ error: String(e?.message ?? e), step, version: VERSION }), {
+    console.error('send-push fatal:', step, (e as Error).message ?? e)
+    return new Response(JSON.stringify({ error: String((e as Error).message ?? e), step, version: VERSION }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     })
   }
