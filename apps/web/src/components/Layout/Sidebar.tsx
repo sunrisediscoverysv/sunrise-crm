@@ -60,10 +60,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       onClick={onClose}
       className={({ isActive }) =>
         [
-          'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border-l-[3px] pl-[10px]',
+          'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
           isActive
-            ? 'bg-gradient-to-r from-brand-teal/[0.18] to-transparent text-white border-brand-teal'
-            : 'text-white/50 hover:text-white/90 hover:bg-white/[0.05] border-transparent',
+            ? 'bg-brand-teal text-white shadow-[0_6px_16px_-4px_rgba(3,165,175,0.6)]'
+            : 'text-white/55 hover:text-white hover:bg-white/[0.07]',
         ].join(' ')
       }
     >

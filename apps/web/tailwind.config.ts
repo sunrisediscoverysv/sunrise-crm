@@ -16,9 +16,9 @@ export default {
         },
       },
       fontFamily: {
-        sans:    ['Outfit', 'sans-serif'],
-        serif:   ['Bitter', 'serif'],
-        display: ['"Playfair Display"', 'serif'],
+        sans:    ['Figtree', 'sans-serif'],
+        serif:   ['Figtree', 'sans-serif'],
+        display: ['Figtree', 'sans-serif'],
       },
       borderRadius: {
         button: '16px',

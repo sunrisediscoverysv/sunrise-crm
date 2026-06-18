@@ -72,44 +72,55 @@ export function DashboardPage() {
 
         {/* Greeting */}
         <div className="mb-8">
-          <p className="text-xs font-sans text-brand-charcoal/40 uppercase tracking-[0.2em] mb-2.5">
+          <p className="text-xs font-sans font-semibold text-brand-charcoal/40 uppercase tracking-[0.2em] mb-2">
             {new Date().toLocaleDateString('es-SV', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
           <h1 className="font-display text-4xl md:text-5xl text-brand-dark leading-[1.05]">
-            {greeting},{' '}
-            <span className="text-brand-teal italic">{firstName}</span>
+            {greeting}, <span className="text-brand-teal">{firstName}</span> 👋
           </h1>
         </div>
 
-        {/* Stat cards */}
+        {/* Stat cards — Monday-style solid color blocks */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
 
-          <div className="col-span-2 lg:col-span-1 bg-stat-dark shadow-stat-dark rounded-card p-6 flex flex-col gap-4 relative overflow-hidden">
-            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-brand-teal/20 blur-2xl" />
-            <p className="text-white/55 text-[11px] font-sans uppercase tracking-[0.18em] relative">Total leads</p>
+          <div className="col-span-2 lg:col-span-1 bg-stat-dark shadow-stat-dark rounded-card p-6 flex flex-col gap-4 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-brand-teal/25 blur-2xl" />
+            <div className="flex items-center gap-2 relative">
+              <span className="text-xl">📊</span>
+              <p className="text-white/70 text-xs font-sans font-semibold uppercase tracking-wider">Total leads</p>
+            </div>
             <p className="font-display text-6xl text-white leading-none tabular-nums relative">{totalClients}</p>
-            <div className="mt-auto pt-3 border-t border-white/10 relative">
-              <p className="text-white/40 text-xs font-sans">clientes registrados</p>
+            <div className="mt-auto pt-3 border-t border-white/15 relative">
+              <p className="text-white/50 text-xs font-sans">clientes registrados</p>
             </div>
           </div>
 
-          <div className="group bg-white rounded-card p-6 shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col gap-3 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-gold to-brand-gold/40" />
-            <p className="text-brand-charcoal/40 text-[11px] font-sans uppercase tracking-[0.18em]">Ganados</p>
-            <p className="font-display text-5xl text-brand-gold leading-none tabular-nums">{wonCount}</p>
+          <div className="rounded-card p-6 shadow-stat-gold bg-brand-gold flex flex-col gap-3 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+            <div className="absolute -bottom-6 -right-4 w-24 h-24 rounded-full bg-white/20 blur-xl" />
+            <div className="flex items-center gap-2 relative">
+              <span className="text-xl">🏆</span>
+              <p className="text-brand-dark/70 text-xs font-sans font-bold uppercase tracking-wider">Ganados</p>
+            </div>
+            <p className="font-display text-5xl text-brand-dark leading-none tabular-nums relative">{wonCount}</p>
           </div>
 
-          <div className="group bg-white rounded-card p-6 shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col gap-3 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-teal to-brand-teal/40" />
-            <p className="text-brand-charcoal/40 text-[11px] font-sans uppercase tracking-[0.18em]">Últimos 7 días</p>
-            <p className="font-display text-5xl text-brand-teal leading-none tabular-nums">{recentLeads?.length ?? 0}</p>
+          <div className="rounded-card p-6 shadow-stat-teal bg-brand-teal flex flex-col gap-3 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+            <div className="absolute -bottom-6 -right-4 w-24 h-24 rounded-full bg-white/20 blur-xl" />
+            <div className="flex items-center gap-2 relative">
+              <span className="text-xl">⚡</span>
+              <p className="text-white/80 text-xs font-sans font-bold uppercase tracking-wider">Últimos 7 días</p>
+            </div>
+            <p className="font-display text-5xl text-white leading-none tabular-nums relative">{recentLeads?.length ?? 0}</p>
           </div>
 
-          <div className="group bg-white rounded-card p-6 shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col gap-3 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-dark to-brand-dark/30" />
-            <p className="text-brand-charcoal/40 text-[11px] font-sans uppercase tracking-[0.18em]">Conversión</p>
-            <p className="font-display text-5xl text-brand-dark leading-none tabular-nums">
-              {conversionRate}<span className="text-2xl text-brand-charcoal/25">%</span>
+          <div className="rounded-card p-6 shadow-card bg-brand-deep flex flex-col gap-3 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+            <div className="absolute -bottom-6 -right-4 w-24 h-24 rounded-full bg-white/10 blur-xl" />
+            <div className="flex items-center gap-2 relative">
+              <span className="text-xl">🎯</span>
+              <p className="text-white/70 text-xs font-sans font-bold uppercase tracking-wider">Conversión</p>
+            </div>
+            <p className="font-display text-5xl text-white leading-none tabular-nums relative">
+              {conversionRate}<span className="text-2xl text-white/45">%</span>
             </p>
           </div>
         </div>

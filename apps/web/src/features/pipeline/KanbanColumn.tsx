@@ -11,18 +11,15 @@ interface KanbanColumnProps {
 export function KanbanColumn({ stage, clients }: KanbanColumnProps) {
   return (
     <div className="flex flex-col h-full w-full">
-      {/* Column header */}
+      {/* Column header — solid Monday-style group bar */}
       <div
-        className="flex items-center gap-2.5 mb-2.5 px-3 py-2.5 rounded-t-card"
-        style={{ borderTop: `3px solid ${stage.color}`, backgroundColor: `${stage.color}12` }}
+        className="flex items-center gap-2.5 mb-2.5 px-3.5 py-2.5 rounded-xl shadow-sm"
+        style={{ backgroundColor: stage.color }}
       >
-        <h3 className="text-xs font-semibold text-brand-charcoal font-sans flex-1 truncate uppercase tracking-wider">
+        <h3 className="text-xs font-bold text-white font-sans flex-1 truncate uppercase tracking-wider drop-shadow-sm">
           {stage.name}
         </h3>
-        <span
-          className="text-xs font-bold font-sans px-2 py-0.5 rounded-pill text-white min-w-[22px] text-center"
-          style={{ backgroundColor: stage.color }}
-        >
+        <span className="text-xs font-bold font-sans px-2 py-0.5 rounded-pill bg-white/25 text-white min-w-[22px] text-center backdrop-blur-sm">
           {clients.length}
         </span>
       </div>

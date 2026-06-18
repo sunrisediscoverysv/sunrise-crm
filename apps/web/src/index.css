@@ -4,15 +4,16 @@
 
 @layer base {
   html {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Figtree', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
 
-  /* Editorial display headings keep their tight, premium rhythm */
+  /* Headings: bold, tight, modern (Monday-style) */
   .font-display {
-    letter-spacing: -0.01em;
+    font-weight: 800;
+    letter-spacing: -0.025em;
   }
 
   /* Custom scrollbar */

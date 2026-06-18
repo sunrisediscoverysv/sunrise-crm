@@ -61,8 +61,8 @@ export function ClientsTable({ clients, loading }: ClientsTableProps) {
             const assignee = client.profiles as { full_name: string; avatar_url: string | null } | null
 
             return (
-              <tr key={client.id} className="hover:bg-[#f7f8f9] transition-colors">
-                <td className="px-6 py-3.5">
+              <tr key={client.id} className="hover:bg-brand-teal/[0.04] transition-colors">
+                <td className="px-6 py-3.5 border-l-4" style={{ borderColor: stage?.color ?? 'transparent' }}>
                   <div>
                     <p className="font-medium text-brand-dark font-sans">
                       {client.full_name ?? 'Sin nombre'}
