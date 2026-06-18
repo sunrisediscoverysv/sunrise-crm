@@ -1,6 +1,6 @@
 // Service worker — Sunrise CRM PWA
 // Navegación: network-first (para tomar deploys nuevos). Assets: stale-while-revalidate.
-const CACHE = 'sunrise-crm-v3'
+const CACHE = 'sunrise-crm-v4'
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png']
 
 self.addEventListener('install', event => {
@@ -59,7 +59,7 @@ self.addEventListener('push', event => {
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      badge: '/badge-96.png',
       data: { url: data.url || '/' },
       vibrate: [80, 40, 80],
     }),
