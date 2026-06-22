@@ -131,7 +131,23 @@ Deno.serve(async (req: Request) => {
 
   let clientId: string
 
-  if (!existingClient) {
+  // Construye el objeto de actualización solo con los campos no nulos entrantes.
+  function buildUpdates(): Record<string, unknown> {
+    const updates: Record<string, unknown> = { last_contact_at: new Date().toISOString() }
+    if (payload.full_name != null) updates.full_name = payload.full_name
+    if (payload.phone != null) updates.phone = payload.phone
+    if (payload.email != null) updates.email = payload.email
+    if (payload.interest_type != null) updates.interest_type = payload.interest_type
+    if (payload.property_of_interest != null) updates.property_of_interest = payload.property_of_interest
+    if (matchedPropertyId != null) updates.property_id = matchedPropertyId
+    if (payload.budget_range != null) updates.budget_range = payload.budget_range
+    return updates
+  }
+
+  if (existingClient) {
+    clientId = existingClient.id
+    await supabase.from('clients').update(buildUpdates()).eq('id', clientId)
+  } else {
     const { data: newClient, error: insertError } = await supabase
       .from('clients')
       .insert({
@@ -151,29 +167,36 @@ Deno.serve(async (req: Request) => {
       .select('id')
       .single()
 
-    if (insertError || !newClient) {
+    if (newClient) {
+      clientId = newClient.id
+    } else if ((insertError as { code?: string } | null)?.code === '23505') {
+      // Condición de carrera: otra solicitud concurrente creó el mismo
+      // (channel, channel_user_id) entre nuestro SELECT y este INSERT.
+      // Recuperamos ese cliente y aplicamos los updates como si ya existiera,
+      // en vez de devolver 500 (esto ocurre justo bajo ráfagas de mensajes).
+      const { data: raced } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('channel', payload.channel)
+        .eq('channel_user_id', payload.channel_user_id)
+        .single()
+
+      if (!raced) {
+        console.error('Error inserting client (post-conflict):', insertError)
+        return new Response(JSON.stringify({ error: 'Failed to create client' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      clientId = raced.id
+      await supabase.from('clients').update(buildUpdates()).eq('id', clientId)
+    } else {
       console.error('Error inserting client:', insertError)
       return new Response(JSON.stringify({ error: 'Failed to create client' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-
-    clientId = newClient.id
-  } else {
-    clientId = existingClient.id
-
-    // Build update object with only non-null incoming fields
-    const updates: Record<string, unknown> = { last_contact_at: new Date().toISOString() }
-    if (payload.full_name != null) updates.full_name = payload.full_name
-    if (payload.phone != null) updates.phone = payload.phone
-    if (payload.email != null) updates.email = payload.email
-    if (payload.interest_type != null) updates.interest_type = payload.interest_type
-    if (payload.property_of_interest != null) updates.property_of_interest = payload.property_of_interest
-    if (matchedPropertyId != null) updates.property_id = matchedPropertyId
-    if (payload.budget_range != null) updates.budget_range = payload.budget_range
-
-    await supabase.from('clients').update(updates).eq('id', clientId)
   }
 
   // Log the raw message
@@ -192,7 +215,7 @@ Deno.serve(async (req: Request) => {
     const clientName = payload.full_name ?? 'Sin nombre'
     const clientPhone = payload.phone ?? '—'
     const clientEmail = payload.email ?? '—'
-    await fetch('https://api.resend.com/emails', {
+    const emailRequest = fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
       body: JSON.stringify({
@@ -216,6 +239,11 @@ Deno.serve(async (req: Request) => {
         `,
       }),
     }).catch(() => { /* silently ignore email errors */ })
+
+    // No bloquear la respuesta esperando a Resend: enviar el correo en segundo
+    // plano. Bajo ráfagas de leads esto evita sumar ~200-500ms a cada solicitud.
+    const edge = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime
+    if (edge) edge.waitUntil(emailRequest)
   }
 
   return new Response(JSON.stringify({ status: 'ok', client_id: clientId }), {
