@@ -44,12 +44,12 @@ export function PropertyInsightsPage() {
       .filter(x => x.leads > 0)
       .sort((a, b) => b.leads - a.leads)
     const withInterest = ranked.length
-    const topByPrice = [...properties].filter(p => p.price_usd).sort((a, b) => (b.price_usd ?? 0) - (a.price_usd ?? 0)).slice(0, 5)
+    const byValue = [...properties].sort((a, b) => (b.price_usd ?? 0) - (a.price_usd ?? 0))
 
     return {
       total, available, totalInterested, totalValue, availableValue,
       byStatus, byTypeAll: typeCounts(properties), byTypeAvailable: typeCounts(available),
-      byTypeValue, ranked, withInterest, topByPrice,
+      byTypeValue, ranked, withInterest, byValue,
     }
   }, [properties, leadCounts])
 
@@ -167,9 +167,9 @@ function renderFocus(focus: Focus, d: any): ReactNode {
         {d.byTypeValue.length === 0 ? <Empty text="Sin valores registrados." /> :
           <Bars money items={d.byTypeValue.map((t: any) => ({ label: TYPE_LABEL[t.type as Property['property_type']], count: t.value, color: TYPE_COLOR[t.type as Property['property_type']], sub: fmtMoney(t.value) }))} total={d.totalValue} />}
       </Section>
-      <Section title="Propiedades de mayor valor" wide>
-        {d.topByPrice.length === 0 ? <Empty text="Sin precios registrados." /> :
-          <PropertyList items={d.topByPrice.map((p: Property) => ({ property: p, trailing: <Price property={p} /> }))} />}
+      <Section title="Propiedades por valor" wide>
+        {d.byValue.length === 0 ? <Empty text="Sin propiedades registradas." /> :
+          <PropertyList items={d.byValue.map((p: Property) => ({ property: p, trailing: <Price property={p} /> }))} />}
       </Section>
     </div>
   )
