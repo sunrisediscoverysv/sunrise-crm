@@ -6,7 +6,10 @@ Prepara el CRM para picos de tráfico (campañas que generan muchos leads/chats 
 
 **Nunca correr estas pruebas contra producción.** Generan miles de registros de prueba.
 Crea un proyecto Supabase de staging (o una rama de base de datos) y despliega ahí la
-Edge Function y las migraciones antes de probar.
+Edge Function y las migraciones antes de probar. Guía paso a paso: [STAGING.md](./STAGING.md).
+
+> Escala objetivo real: ~100 usuarios enviando datos a la vez (pico, no sostenido).
+> Para eso, `--vus 100 --duration 30s` es una prueba representativa.
 
 ## Requisitos
 
