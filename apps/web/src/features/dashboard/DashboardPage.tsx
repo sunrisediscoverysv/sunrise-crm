@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/features/auth/AuthContext'
 import type { PipelineStage, Client } from '@/types/database'
+import { StatDetailModal, channelLabel, channelColor, type StatDetail } from './StatDetailModal'
 
 interface StageCount {
   stage: PipelineStage
@@ -59,17 +61,9 @@ function useRecentLeadsCount() {
   })
 }
 
-const channelLabel: Record<string, string> = {
-  whatsapp: 'WhatsApp', instagram: 'Instagram', messenger: 'Messenger',
-  web_chat: 'Web Chat', other: 'Otro',
-}
-const channelColor: Record<string, string> = {
-  whatsapp: '#25D366', instagram: '#E1306C', messenger: '#0084FF',
-  web_chat: '#03a5af', other: '#9ca3af',
-}
-
 export function DashboardPage() {
   const { profile } = useAuth()
+  const [detail, setDetail] = useState<StatDetail | null>(null)
   const { data: stageStats, isLoading: loadingStats } = useStageStats()
   const { data: recentLeads, isLoading: loadingLeads } = useRecentLeads()
   const { data: recentCount } = useRecentLeadsCount()
@@ -99,7 +93,11 @@ export function DashboardPage() {
         {/* Stat cards — Monday-style solid color blocks */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
 
-          <div className="col-span-2 lg:col-span-1 bg-gradient-to-br from-brand-deep via-brand-dark to-[#0d3340] shadow-stat-dark rounded-card p-6 flex flex-col gap-4 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+          <button
+            type="button"
+            onClick={() => setDetail('total')}
+            className="col-span-2 lg:col-span-1 text-left w-full bg-gradient-to-br from-brand-deep via-brand-dark to-[#0d3340] shadow-stat-dark rounded-card p-6 flex flex-col gap-4 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2"
+          >
             <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-brand-teal/25 blur-2xl" />
             <div className="flex items-center gap-2 relative">
               <span className="text-xl">📊</span>
@@ -107,29 +105,41 @@ export function DashboardPage() {
             </div>
             <p className="font-display text-6xl text-white leading-none tabular-nums relative">{totalClients}</p>
             <div className="mt-auto pt-3 border-t border-white/15 relative">
-              <p className="text-white/50 text-xs font-sans">clientes registrados</p>
+              <p className="text-white/50 text-xs font-sans">Ver detalle →</p>
             </div>
-          </div>
+          </button>
 
-          <div className="rounded-card p-6 shadow-stat-gold bg-brand-gold flex flex-col gap-3 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+          <button
+            type="button"
+            onClick={() => setDetail('won')}
+            className="text-left w-full rounded-card p-6 shadow-stat-gold bg-brand-gold flex flex-col gap-3 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2"
+          >
             <div className="absolute -bottom-6 -right-4 w-24 h-24 rounded-full bg-white/20 blur-xl" />
             <div className="flex items-center gap-2 relative">
               <span className="text-xl">🏆</span>
               <p className="text-brand-dark/70 text-xs font-sans font-bold uppercase tracking-wider">Ganados</p>
             </div>
             <p className="font-display text-5xl text-brand-dark leading-none tabular-nums relative">{wonCount}</p>
-          </div>
+          </button>
 
-          <div className="rounded-card p-6 shadow-stat-teal bg-brand-teal flex flex-col gap-3 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+          <button
+            type="button"
+            onClick={() => setDetail('recent')}
+            className="text-left w-full rounded-card p-6 shadow-stat-teal bg-brand-teal flex flex-col gap-3 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark focus-visible:ring-offset-2"
+          >
             <div className="absolute -bottom-6 -right-4 w-24 h-24 rounded-full bg-white/20 blur-xl" />
             <div className="flex items-center gap-2 relative">
               <span className="text-xl">⚡</span>
               <p className="text-white/80 text-xs font-sans font-bold uppercase tracking-wider">Últimos 7 días</p>
             </div>
             <p className="font-display text-5xl text-white leading-none tabular-nums relative">{recentCount ?? 0}</p>
-          </div>
+          </button>
 
-          <div className="rounded-card p-6 shadow-card bg-brand-deep flex flex-col gap-3 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+          <button
+            type="button"
+            onClick={() => setDetail('conversion')}
+            className="text-left w-full rounded-card p-6 shadow-card bg-brand-deep flex flex-col gap-3 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2"
+          >
             <div className="absolute -bottom-6 -right-4 w-24 h-24 rounded-full bg-white/10 blur-xl" />
             <div className="flex items-center gap-2 relative">
               <span className="text-xl">🎯</span>
@@ -138,7 +148,7 @@ export function DashboardPage() {
             <p className="font-display text-5xl text-white leading-none tabular-nums relative">
               {conversionRate}<span className="text-2xl text-white/45">%</span>
             </p>
-          </div>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -236,6 +246,8 @@ export function DashboardPage() {
 
         </div>
       </div>
+
+      <StatDetailModal detail={detail} onClose={() => setDetail(null)} />
     </div>
   )
 }
