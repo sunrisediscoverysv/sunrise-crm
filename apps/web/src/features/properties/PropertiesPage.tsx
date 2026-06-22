@@ -1,25 +1,10 @@
 import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useProperties, usePropertyLeadCounts } from '@/hooks/useProperties'
 import { EmptyState } from '@/components/EmptyState'
 import { NewPropertyModal } from './NewPropertyModal'
+import { STATUS_META, TYPE_LABEL, fmtMoney } from './propertyMeta'
 import type { Property } from '@/types/database'
-
-const STATUS_META: Record<Property['status'], { label: string; color: string }> = {
-  available:  { label: 'Disponible', color: '#03a5af' },
-  reserved:   { label: 'Reservada',  color: '#eebb69' },
-  sold:       { label: 'Vendida',    color: '#6b7280' },
-  off_market: { label: 'Fuera de mercado', color: '#9ca3af' },
-}
-
-const TYPE_LABEL: Record<Property['property_type'], string> = {
-  land: 'Terreno', house: 'Casa', department: 'Apartamento', lot: 'Lote', other: 'Otro',
-}
-
-function fmtMoney(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `$${Math.round(n / 1_000)}K`
-  return `$${n}`
-}
 
 function PropertyCard({ property, leadCount }: { property: Property; leadCount: number }) {
   const status = STATUS_META[property.status]
@@ -140,28 +125,32 @@ export function PropertiesPage() {
           </button>
         </div>
 
-        {/* Bloques de color tipo Monday */}
+        {/* Bloques de color tipo Monday — enlazan al detalle */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-          <div className="bg-gradient-to-br from-brand-deep via-brand-dark to-[#0d3340] shadow-stat-dark rounded-card p-5 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+          <Link to="/properties/insights?focus=total" className="block bg-gradient-to-br from-brand-deep via-brand-dark to-[#0d3340] shadow-stat-dark rounded-card p-5 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">
             <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-brand-teal/25 blur-2xl" />
             <div className="flex items-center gap-2 relative"><span className="text-lg">🏝️</span><p className="text-white/70 text-[11px] font-sans font-bold uppercase tracking-wider">Propiedades</p></div>
             <p className="font-display text-4xl text-white leading-none tabular-nums mt-3 relative">{properties.length}</p>
-          </div>
-          <div className="bg-brand-teal shadow-stat-teal rounded-card p-5 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+            <p className="text-white/45 text-[11px] font-sans mt-2 relative">Ver detalle →</p>
+          </Link>
+          <Link to="/properties/insights?focus=available" className="block bg-brand-teal shadow-stat-teal rounded-card p-5 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark focus-visible:ring-offset-2">
             <div className="absolute -bottom-6 -right-4 w-24 h-24 rounded-full bg-white/20 blur-xl" />
             <div className="flex items-center gap-2 relative"><span className="text-lg">🟢</span><p className="text-white/80 text-[11px] font-sans font-bold uppercase tracking-wider">Disponibles</p></div>
             <p className="font-display text-4xl text-white leading-none tabular-nums mt-3 relative">{available}</p>
-          </div>
-          <div className="bg-brand-gold shadow-stat-gold rounded-card p-5 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+            <p className="text-white/55 text-[11px] font-sans mt-2 relative">Ver detalle →</p>
+          </Link>
+          <Link to="/properties/insights?focus=interested" className="block bg-brand-gold shadow-stat-gold rounded-card p-5 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark focus-visible:ring-offset-2">
             <div className="absolute -bottom-6 -right-4 w-24 h-24 rounded-full bg-white/25 blur-xl" />
             <div className="flex items-center gap-2 relative"><span className="text-lg">👥</span><p className="text-brand-dark/70 text-[11px] font-sans font-bold uppercase tracking-wider">Leads interesados</p></div>
             <p className="font-display text-4xl text-brand-dark leading-none tabular-nums mt-3 relative">{totalInterested}</p>
-          </div>
-          <div className="bg-brand-deep shadow-card rounded-card p-5 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300">
+            <p className="text-brand-dark/45 text-[11px] font-sans mt-2 relative">Ver detalle →</p>
+          </Link>
+          <Link to="/properties/insights?focus=value" className="block bg-brand-deep shadow-card rounded-card p-5 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:ring-offset-2">
             <div className="absolute -bottom-6 -right-4 w-24 h-24 rounded-full bg-white/10 blur-xl" />
             <div className="flex items-center gap-2 relative"><span className="text-lg">💰</span><p className="text-white/70 text-[11px] font-sans font-bold uppercase tracking-wider">Valor catálogo</p></div>
             <p className="font-display text-4xl text-white leading-none tabular-nums mt-3 relative">{totalValue > 0 ? fmtMoney(totalValue) : '—'}</p>
-          </div>
+            <p className="text-white/45 text-[11px] font-sans mt-2 relative">Ver detalle →</p>
+          </Link>
         </div>
 
         {/* Filtros */}
