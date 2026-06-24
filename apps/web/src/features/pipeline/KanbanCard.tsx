@@ -20,10 +20,35 @@ const interestLabel: Record<string, string> = {
 
 export function KanbanCard({ client, index }: KanbanCardProps) {
   const assignee = client.profiles as { full_name: string; avatar_url: string | null } | null
-  const ago = formatDistanceToNow(new Date(client.last_contact_at ?? client.created_at), {
+  // Mostramos la fecha de REGISTRO (created_at) para que coincida con el orden
+  // de las columnas (también por created_at). Así un lead nuevo se distingue de
+  // un contacto que solo volvió a escribir (ese refresca last_contact_at, no el alta).
+  const registeredDate = new Date(client.created_at)
+  const registered = formatDistanceToNow(registeredDate, {
     addSuffix: true,
     locale: es,
   })
+  const registeredFull = registeredDate.toLocaleString('es-SV', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+
+  // Señal de "actividad reciente": un contacto ya registrado que vuelve a escribir
+  // refresca last_contact_at sin cambiar de etapa. Lo mostramos para que el asesor
+  // note la re-interacción sin perder el avance del pipeline. Solo aparece cuando el
+  // último contacto es claramente posterior al alta (>1h), no en el lead recién creado.
+  const lastContact = client.last_contact_at ? new Date(client.last_contact_at) : null
+  const reengaged = lastContact != null &&
+    lastContact.getTime() - registeredDate.getTime() > 60 * 60 * 1000
+  const activeLast24h = lastContact != null &&
+    Date.now() - lastContact.getTime() < 24 * 60 * 60 * 1000
+  const lastContactAgo = lastContact
+    ? formatDistanceToNow(lastContact, { addSuffix: true, locale: es })
+    : ''
+  const lastContactFull = lastContact
+    ? lastContact.toLocaleString('es-SV', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      })
+    : ''
 
   const followUp = client.follow_up_at ? new Date(client.follow_up_at) : null
   const now = new Date()
@@ -74,6 +99,20 @@ export function KanbanCard({ client, index }: KanbanCardProps) {
             </p>
           )}
 
+          {/* Actividad reciente: el contacto volvió a escribir (no cambia su etapa) */}
+          {reengaged && (
+            <div
+              className={[
+                'flex items-center gap-1 text-xs font-sans px-2 py-0.5 rounded-pill w-fit mb-2',
+                activeLast24h ? 'bg-emerald-50 text-emerald-600' : 'bg-brand-light-gray/50 text-brand-charcoal/50',
+              ].join(' ')}
+              title={`Última actividad: ${lastContactFull}`}
+            >
+              <span className={activeLast24h ? '' : 'opacity-60'}>💬</span>
+              Escribió {lastContactAgo}
+            </div>
+          )}
+
           {/* Follow-up badge */}
           {followUp && (
             <div className={[
@@ -100,7 +139,7 @@ export function KanbanCard({ client, index }: KanbanCardProps) {
             ) : (
               <span className="text-xs text-brand-charcoal/30 font-sans">Sin asignar</span>
             )}
-            <span className="text-xs text-brand-charcoal/35 font-sans flex-shrink-0">{ago}</span>
+            <span className="text-xs text-brand-charcoal/35 font-sans flex-shrink-0" title={`Registrado: ${registeredFull}`}>{registered}</span>
           </div>
         </div>
       )}
