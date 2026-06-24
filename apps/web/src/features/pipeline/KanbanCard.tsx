@@ -20,9 +20,16 @@ const interestLabel: Record<string, string> = {
 
 export function KanbanCard({ client, index }: KanbanCardProps) {
   const assignee = client.profiles as { full_name: string; avatar_url: string | null } | null
-  const ago = formatDistanceToNow(new Date(client.last_contact_at ?? client.created_at), {
+  // Mostramos la fecha de REGISTRO (created_at) para que coincida con el orden
+  // de las columnas (también por created_at). Así un lead nuevo se distingue de
+  // un contacto que solo volvió a escribir (ese refresca last_contact_at, no el alta).
+  const registeredDate = new Date(client.created_at)
+  const registered = formatDistanceToNow(registeredDate, {
     addSuffix: true,
     locale: es,
+  })
+  const registeredFull = registeredDate.toLocaleString('es-SV', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })
 
   const followUp = client.follow_up_at ? new Date(client.follow_up_at) : null
@@ -100,7 +107,7 @@ export function KanbanCard({ client, index }: KanbanCardProps) {
             ) : (
               <span className="text-xs text-brand-charcoal/30 font-sans">Sin asignar</span>
             )}
-            <span className="text-xs text-brand-charcoal/35 font-sans flex-shrink-0">{ago}</span>
+            <span className="text-xs text-brand-charcoal/35 font-sans flex-shrink-0" title={`Registrado: ${registeredFull}`}>{registered}</span>
           </div>
         </div>
       )}
