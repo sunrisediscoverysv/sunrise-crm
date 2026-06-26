@@ -208,10 +208,13 @@ Deno.serve(async (req: Request) => {
     raw_payload: payload as unknown as Record<string, unknown>,
   })
 
-  // Email notification — only fires if RESEND_API_KEY and NOTIFICATION_EMAIL are configured
+  // Email notification — disabled by default. To enable in production set
+  // LEAD_EMAIL_NOTIFICATIONS=true (plus RESEND_API_KEY and NOTIFICATION_EMAIL).
+  // Kept off during testing so new leads don't flood the inbox.
+  const notifEnabled = Deno.env.get('LEAD_EMAIL_NOTIFICATIONS') === 'true'
   const resendKey = Deno.env.get('RESEND_API_KEY')
   const notifEmail = Deno.env.get('NOTIFICATION_EMAIL')
-  if (resendKey && notifEmail && !existingClient) {
+  if (notifEnabled && resendKey && notifEmail && !existingClient) {
     const clientName = payload.full_name ?? 'Sin nombre'
     const clientPhone = payload.phone ?? '—'
     const clientEmail = payload.email ?? '—'
