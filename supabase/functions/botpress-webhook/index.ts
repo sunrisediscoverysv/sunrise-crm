@@ -131,10 +131,19 @@ Deno.serve(async (req: Request) => {
 
   let clientId: string
 
+  // Nombre efectivo: si el contacto viene sin nombre (típico en WhatsApp),
+  // usamos el teléfono como nombre para que no quede como "Sin nombre" en el CRM.
+  const trimmedName = payload.full_name?.trim()
+  const realName = trimmedName && trimmedName !== 'Sin nombre' ? trimmedName : null
+  const effectiveName = realName ?? (payload.phone?.trim() || null)
+
   // Construye el objeto de actualización solo con los campos no nulos entrantes.
   function buildUpdates(): Record<string, unknown> {
     const updates: Record<string, unknown> = { last_contact_at: new Date().toISOString() }
-    if (payload.full_name != null) updates.full_name = payload.full_name
+    // Solo pisamos el nombre con uno real; si no hay nombre real pero el cliente
+    // existente está sin nombre, lo rellenamos con el teléfono.
+    if (realName != null) updates.full_name = realName
+    else if (!existingClient?.full_name && effectiveName != null) updates.full_name = effectiveName
     if (payload.phone != null) updates.phone = payload.phone
     if (payload.email != null) updates.email = payload.email
     if (payload.interest_type != null) updates.interest_type = payload.interest_type
@@ -153,7 +162,7 @@ Deno.serve(async (req: Request) => {
       .insert({
         channel: payload.channel,
         channel_user_id: payload.channel_user_id,
-        full_name: payload.full_name ?? null,
+        full_name: effectiveName,
         phone: payload.phone ?? null,
         email: payload.email ?? null,
         budget_range: payload.budget_range ?? null,
@@ -208,10 +217,13 @@ Deno.serve(async (req: Request) => {
     raw_payload: payload as unknown as Record<string, unknown>,
   })
 
-  // Email notification — only fires if RESEND_API_KEY and NOTIFICATION_EMAIL are configured
+  // Email notification — disabled by default. To enable in production set
+  // LEAD_EMAIL_NOTIFICATIONS=true (plus RESEND_API_KEY and NOTIFICATION_EMAIL).
+  // Kept off during testing so new leads don't flood the inbox.
+  const notifEnabled = Deno.env.get('LEAD_EMAIL_NOTIFICATIONS') === 'true'
   const resendKey = Deno.env.get('RESEND_API_KEY')
   const notifEmail = Deno.env.get('NOTIFICATION_EMAIL')
-  if (resendKey && notifEmail && !existingClient) {
+  if (notifEnabled && resendKey && notifEmail && !existingClient) {
     const clientName = payload.full_name ?? 'Sin nombre'
     const clientPhone = payload.phone ?? '—'
     const clientEmail = payload.email ?? '—'
