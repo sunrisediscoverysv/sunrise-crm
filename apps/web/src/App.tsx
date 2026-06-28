@@ -4,6 +4,7 @@ import { LoginPage } from './features/auth/LoginPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AppLayout } from './components/Layout/AppLayout'
 import { DashboardPage } from './features/dashboard/DashboardPage'
+import { StatDetailPage } from './features/dashboard/StatDetailPage'
 import { PipelinePage } from './features/pipeline/PipelinePage'
 import { ClientsPage } from './features/clients/ClientsPage'
 import { ClientDetailPage } from './features/clients/ClientDetailPage'
@@ -24,6 +25,8 @@ export default function App() {
               <AppLayout>
                 <Routes>
                   <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/stats/stage/:stageId" element={<StatDetailPage />} />
+                  <Route path="/stats/:detail" element={<StatDetailPage />} />
                   <Route path="/pipeline" element={<PipelinePage />} />
                   <Route path="/clients" element={<ClientsPage />} />
                   <Route path="/clients/:id" element={<ClientDetailPage />} />

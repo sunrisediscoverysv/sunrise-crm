@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ChannelBadge, Badge } from '@/components/Badge'
 import { Avatar } from '@/components/Avatar'
 import { EmptyState } from '@/components/EmptyState'
@@ -12,6 +12,8 @@ interface ClientsTableProps {
 }
 
 export function ClientsTable({ clients, loading }: ClientsTableProps) {
+  const navigate = useNavigate()
+
   if (loading) {
     return (
       <div className="bg-white rounded-card shadow-card overflow-hidden">
@@ -44,6 +46,7 @@ export function ClientsTable({ clients, loading }: ClientsTableProps) {
 
   return (
     <div className="bg-white rounded-card shadow-card overflow-hidden">
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-brand-light-gray bg-[#f7f8f9]">
@@ -61,17 +64,25 @@ export function ClientsTable({ clients, loading }: ClientsTableProps) {
             const assignee = client.profiles as { full_name: string; avatar_url: string | null } | null
 
             return (
-              <tr key={client.id} className="hover:bg-brand-teal/[0.04] transition-colors">
+              <tr
+                key={client.id}
+                onClick={() => navigate(`/clients/${client.id}`)}
+                className="hover:bg-brand-teal/[0.04] transition-colors cursor-pointer"
+              >
                 <td className="px-6 py-3.5 border-l-4" style={{ borderColor: stage?.color ?? 'transparent' }}>
                   <div>
-                    <p className="font-medium text-brand-dark font-sans">
+                    <Link
+                      to={`/clients/${client.id}`}
+                      onClick={e => e.stopPropagation()}
+                      className="font-medium text-brand-dark font-sans hover:text-brand-teal transition-colors"
+                    >
                       {client.full_name ?? 'Sin nombre'}
-                    </p>
+                    </Link>
                     {client.phone && (
                       <p className="text-xs text-brand-charcoal/50 font-sans mt-0.5">{client.phone}</p>
                     )}
                     {client.email && (
-                      <p className="text-xs text-brand-charcoal/50 font-sans">{client.email}</p>
+                      <p className="text-xs text-brand-charcoal/50 font-sans truncate max-w-[220px]">{client.email}</p>
                     )}
                   </div>
                 </td>
@@ -103,6 +114,7 @@ export function ClientsTable({ clients, loading }: ClientsTableProps) {
                 <td className="px-4 py-3.5 text-right">
                   <Link
                     to={`/clients/${client.id}`}
+                    onClick={e => e.stopPropagation()}
                     className="text-xs text-brand-teal font-medium font-sans hover:text-brand-deep transition-colors"
                   >
                     Ver →
@@ -113,6 +125,7 @@ export function ClientsTable({ clients, loading }: ClientsTableProps) {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

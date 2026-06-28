@@ -51,7 +51,7 @@ export function ClientsPage() {
   return (
     <div className="h-full overflow-y-auto bg-[#f6f8f9] bg-app">
       <div className="p-4 md:p-8 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-5 md:mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5 md:mb-6">
           <div>
             <h1 className="font-display text-3xl md:text-4xl text-brand-dark leading-tight">Clientes</h1>
             <p className="text-brand-charcoal/60 font-sans mt-1 text-sm">
