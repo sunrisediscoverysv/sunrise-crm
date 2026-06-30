@@ -74,14 +74,27 @@ Deno.serve(async (req: Request) => {
     const templateName = body.template_name as string | undefined
     const language = body.language as string | undefined
     const variables = (body.variables as string[] | undefined) ?? []
+    const headerImageUrl = body.header_image_url as string | undefined
 
     if (!to || !templateName || !language) {
       return json({ error: 'Faltan datos requeridos: to, template_name, language.' }, 400)
     }
 
-    const components = variables.length > 0
-      ? [{ type: 'body', parameters: variables.map(v => ({ type: 'text', text: String(v) })) }]
-      : []
+    const components: unknown[] = []
+    // Encabezado con imagen (plantillas con header IMAGE)
+    if (headerImageUrl) {
+      components.push({
+        type: 'header',
+        parameters: [{ type: 'image', image: { link: headerImageUrl } }],
+      })
+    }
+    // Variables del cuerpo {{1}}, {{2}}…
+    if (variables.length > 0) {
+      components.push({
+        type: 'body',
+        parameters: variables.map(v => ({ type: 'text', text: String(v) })),
+      })
+    }
 
     const payload = {
       messaging_product: 'whatsapp',

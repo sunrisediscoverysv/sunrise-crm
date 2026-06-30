@@ -5,7 +5,8 @@ import { functionsErrorMessage } from '@/lib/functions'
 export interface TemplateComponent {
   type: string // 'BODY' | 'HEADER' | 'FOOTER' | 'BUTTONS'
   text?: string
-  format?: string
+  format?: string // en HEADER: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT'
+  example?: { header_handle?: string[]; body_text?: string[][] }
 }
 
 export interface WhatsappTemplate {
@@ -27,6 +28,18 @@ export function templateVarCount(t: WhatsappTemplate): number {
   if (!matches) return 0
   const nums = matches.map(m => parseInt(m.replace(/[^\d]/g, ''), 10))
   return Math.max(0, ...nums)
+}
+
+// Formato del encabezado: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT' | null
+export function templateHeaderFormat(t: WhatsappTemplate): string | null {
+  const h = t.components?.find(c => c.type?.toUpperCase() === 'HEADER')
+  return h?.format?.toUpperCase() ?? null
+}
+
+// URL de ejemplo del encabezado de imagen (sirve como valor por defecto)
+export function templateHeaderExample(t: WhatsappTemplate): string | null {
+  const h = t.components?.find(c => c.type?.toUpperCase() === 'HEADER')
+  return h?.example?.header_handle?.[0] ?? null
 }
 
 // Reemplaza {{1}}, {{2}}… por los valores dados (para la vista previa)

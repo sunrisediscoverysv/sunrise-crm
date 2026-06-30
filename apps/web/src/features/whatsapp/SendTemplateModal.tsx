@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { functionsErrorMessage } from '@/lib/functions'
 import {
   useWhatsappTemplates, templateBody, templateVarCount, fillTemplate,
+  templateHeaderFormat, templateHeaderExample,
   type WhatsappTemplate,
 } from '@/hooks/useWhatsappTemplates'
 import { Select } from '@/components/Select'
@@ -23,6 +24,7 @@ export function SendTemplateModal({ open, onClose, client }: SendTemplateModalPr
 
   const [selectedName, setSelectedName] = useState('')
   const [values, setValues] = useState<string[]>([])
+  const [headerImageUrl, setHeaderImageUrl] = useState('')
   const [sent, setSent] = useState(false)
 
   const selected = useMemo<WhatsappTemplate | null>(
@@ -30,12 +32,16 @@ export function SendTemplateModal({ open, onClose, client }: SendTemplateModalPr
     [templates, selectedName],
   )
 
+  const headerFormat = selected ? templateHeaderFormat(selected) : null
+  const needsImage = headerFormat === 'IMAGE'
+
   // Al elegir plantilla, preparar los inputs de variables (prefijar la 1ª con el nombre)
   useEffect(() => {
-    if (!selected) { setValues([]); return }
+    if (!selected) { setValues([]); setHeaderImageUrl(''); return }
     const count = templateVarCount(selected)
     const firstName = client.full_name?.split(' ')[0] ?? ''
     setValues(Array.from({ length: count }, (_, i) => (i === 0 ? firstName : '')))
+    setHeaderImageUrl(templateHeaderExample(selected) ?? '')
   }, [selected, client.full_name])
 
   const sendMutation = useMutation({
@@ -50,6 +56,7 @@ export function SendTemplateModal({ open, onClose, client }: SendTemplateModalPr
           template_name: selected.name,
           language: selected.language,
           variables: values,
+          ...(needsImage && headerImageUrl ? { header_image_url: headerImageUrl } : {}),
         },
       })
       if (error) throw new Error(await functionsErrorMessage(error, 'No se pudo enviar la plantilla.'))
@@ -64,6 +71,7 @@ export function SendTemplateModal({ open, onClose, client }: SendTemplateModalPr
   function close() {
     setSelectedName('')
     setValues([])
+    setHeaderImageUrl('')
     setSent(false)
     sendMutation.reset()
     onClose()
@@ -125,6 +133,21 @@ export function SendTemplateModal({ open, onClose, client }: SendTemplateModalPr
 
               {selected && (
                 <>
+                  {/* Imagen de encabezado (plantillas con header IMAGE) */}
+                  {needsImage && (
+                    <Field label="URL de imagen del encabezado">
+                      <input
+                        className={input}
+                        value={headerImageUrl}
+                        onChange={e => setHeaderImageUrl(e.target.value)}
+                        placeholder="https://…/imagen.jpg"
+                      />
+                      <p className="text-[11px] text-brand-charcoal/40 font-sans mt-1">
+                        Esta plantilla lleva imagen. Se rellenó con la imagen de ejemplo; puedes cambiarla por una URL pública.
+                      </p>
+                    </Field>
+                  )}
+
                   {/* Variables */}
                   {values.length > 0 && (
                     <div className="flex flex-col gap-3">
@@ -166,7 +189,7 @@ export function SendTemplateModal({ open, onClose, client }: SendTemplateModalPr
           {!sent && (
             <button
               onClick={() => sendMutation.mutate()}
-              disabled={sendMutation.isPending || !selected || !client.phone}
+              disabled={sendMutation.isPending || !selected || !client.phone || (needsImage && !headerImageUrl)}
               className="px-5 py-2 bg-[#25D366] text-white text-sm font-medium font-sans rounded-button hover:bg-[#1da851] transition-colors disabled:opacity-50"
             >
               {sendMutation.isPending ? 'Enviando…' : 'Enviar'}
