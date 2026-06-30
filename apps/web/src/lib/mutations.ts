@@ -5,6 +5,8 @@ import type {
   ClientCommentInsert,
   StageHistoryInsert,
   PropertyInsert,
+  AppointmentInsert,
+  AppointmentUpdate,
 } from '@/types/database'
 import type { Database } from '@/types/database'
 
@@ -85,6 +87,24 @@ export async function moveClientToStage(
 
 export async function addComment(values: ClientCommentInsert): Promise<void> {
   const { error } = await raw.from('client_comments').insert(values)
+  if (error) throw new Error(error.message)
+}
+
+// ── Appointment mutations (calendario) ───────────────────────────────────────
+
+export async function createAppointment(values: AppointmentInsert): Promise<string> {
+  const { data, error } = await raw.from('appointments').insert(values).select('id').single()
+  if (error) throw new Error(error.message)
+  return (data as { id: string }).id
+}
+
+export async function updateAppointment(id: string, values: AppointmentUpdate): Promise<void> {
+  const { error } = await raw.from('appointments').update(values).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteAppointment(id: string): Promise<void> {
+  const { error } = await raw.from('appointments').delete().eq('id', id)
   if (error) throw new Error(error.message)
 }
 
