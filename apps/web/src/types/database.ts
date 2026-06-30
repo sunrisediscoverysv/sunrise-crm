@@ -294,6 +294,57 @@ export type Database = {
         }
         Relationships: []
       }
+      appointments: {
+        Row: {
+          id: string
+          client_id: string
+          title: string | null
+          appointment_type: 'visit' | 'call' | 'meeting' | 'signing' | 'follow_up' | 'other'
+          starts_at: string
+          ends_at: string | null
+          location: string | null
+          notes: string | null
+          status: 'scheduled' | 'completed' | 'cancelled' | 'no_show'
+          assigned_to: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          title?: string | null
+          appointment_type?: 'visit' | 'call' | 'meeting' | 'signing' | 'follow_up' | 'other'
+          starts_at: string
+          ends_at?: string | null
+          location?: string | null
+          notes?: string | null
+          status?: 'scheduled' | 'completed' | 'cancelled' | 'no_show'
+          assigned_to?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          title?: string | null
+          appointment_type?: 'visit' | 'call' | 'meeting' | 'signing' | 'follow_up' | 'other'
+          starts_at?: string
+          ends_at?: string | null
+          location?: string | null
+          notes?: string | null
+          status?: 'scheduled' | 'completed' | 'cancelled' | 'no_show'
+          assigned_to?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "appointments_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clients"; referencedColumns: ["id"] },
+          { foreignKeyName: "appointments_assigned_to_fkey"; columns: ["assigned_to"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }
+        ]
+      }
       client_attachments: {
         Row: {
           id: string
@@ -351,6 +402,7 @@ export type StageHistory = Database['public']['Tables']['stage_history']['Row']
 export type Message = Database['public']['Tables']['messages']['Row']
 export type Property = Database['public']['Tables']['properties']['Row']
 export type ClientAttachment = Database['public']['Tables']['client_attachments']['Row']
+export type Appointment = Database['public']['Tables']['appointments']['Row']
 
 export type ClientInsert = Database['public']['Tables']['clients']['Insert']
 export type PropertyInsert = Database['public']['Tables']['properties']['Insert']
@@ -358,6 +410,8 @@ export type PropertyUpdate = Database['public']['Tables']['properties']['Update'
 export type ClientUpdate = Database['public']['Tables']['clients']['Update']
 export type ClientCommentInsert = Database['public']['Tables']['client_comments']['Insert']
 export type StageHistoryInsert = Database['public']['Tables']['stage_history']['Insert']
+export type AppointmentInsert = Database['public']['Tables']['appointments']['Insert']
+export type AppointmentUpdate = Database['public']['Tables']['appointments']['Update']
 
 export type UserRole = Database['public']['Enums']['user_role']
 export type Channel = Database['public']['Enums']['channel_type']

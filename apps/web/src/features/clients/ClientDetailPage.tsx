@@ -9,6 +9,7 @@ import { useAuth } from '@/features/auth/AuthContext'
 import { ClientComments } from './ClientComments'
 import { ClientMessages } from './ClientMessages'
 import { ClientAttachments } from './ClientAttachments'
+import { ClientAppointments } from '@/features/calendar/ClientAppointments'
 import { Badge, ChannelBadge } from '@/components/Badge'
 import { Avatar } from '@/components/Avatar'
 import { Select } from '@/components/Select'
@@ -314,6 +315,9 @@ export function ClientDetailPage() {
         <div className="lg:col-span-2 flex flex-col gap-6">
           <div className="bg-white rounded-card shadow-card p-5">
             <ClientMessages clientId={client.id} />
+          </div>
+          <div className="bg-white rounded-card shadow-card p-5">
+            <ClientAppointments clientId={client.id} />
           </div>
           <div className="bg-white rounded-card shadow-card p-5">
             <ClientComments clientId={client.id} />
