@@ -23,6 +23,25 @@ export function InboxPage() {
   const queryClient = useQueryClient()
   const { data: conversations = [], isLoading } = useInboxConversations()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+
+  // Filtro por nombre o teléfono. Para el teléfono comparamos solo dígitos, así
+  // "7000 1234", "+503 70001234" o "70001234" encuentran el mismo contacto.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return conversations
+    const qDigits = q.replace(/\D/g, '')
+    return conversations.filter(c => {
+      const name = (c.client.full_name ?? '').toLowerCase()
+      const phone = c.client.phone ?? ''
+      const phoneDigits = phone.replace(/\D/g, '')
+      return (
+        name.includes(q) ||
+        phone.toLowerCase().includes(q) ||
+        (qDigits.length > 0 && phoneDigits.includes(qDigits))
+      )
+    })
+  }, [conversations, query])
 
   // Realtime: cualquier mensaje nuevo refresca la bandeja y el hilo afectado.
   useEffect(() => {
@@ -68,7 +87,31 @@ export function InboxPage() {
       >
         <div className="px-5 py-4 border-b border-brand-light-gray flex-shrink-0">
           <h1 className="font-display text-2xl text-brand-dark leading-tight">Conversaciones</h1>
-          <p className="text-brand-charcoal/50 font-sans text-xs mt-0.5">Chats de WhatsApp y otros canales</p>
+          <p className="text-brand-charcoal/50 font-sans text-xs mt-0.5 mb-3">Chats de WhatsApp y otros canales</p>
+          <div className="relative">
+            <svg className="w-4 h-4 text-brand-charcoal/35 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+            </svg>
+            <input
+              type="search"
+              inputMode="search"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Buscar por nombre o teléfono…"
+              className="w-full text-sm font-sans text-brand-dark bg-brand-light-gray/40 border border-transparent rounded-button pl-9 pr-8 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal transition-colors placeholder:text-brand-charcoal/35"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery('')}
+                aria-label="Limpiar búsqueda"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-charcoal/35 hover:text-brand-dark p-0.5"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -82,9 +125,13 @@ export function InboxPage() {
             <p className="text-sm text-brand-charcoal/40 font-sans py-10 px-5 text-center">
               Aún no hay conversaciones.
             </p>
+          ) : filtered.length === 0 ? (
+            <p className="text-sm text-brand-charcoal/40 font-sans py-10 px-5 text-center">
+              Sin resultados para «{query.trim()}».
+            </p>
           ) : (
             <ul>
-              {conversations.map(c => {
+              {filtered.map(c => {
                 const isSel = c.client.id === selectedId
                 const preview = c.lastMessage.direction === 'outbound'
                   ? `Tú: ${c.lastMessage.content ?? ''}`
