@@ -7,7 +7,7 @@ import { useProfiles } from '@/hooks/useProfiles'
 import { useProperties } from '@/hooks/useProperties'
 import { useAuth } from '@/features/auth/AuthContext'
 import { ClientComments } from './ClientComments'
-import { ClientMessages } from './ClientMessages'
+import { ChatPanel } from '@/features/whatsapp/ChatPanel'
 import { ClientAttachments } from './ClientAttachments'
 import { ClientAppointments } from '@/features/calendar/ClientAppointments'
 import { SendTemplateModal } from '@/features/whatsapp/SendTemplateModal'
@@ -336,8 +336,12 @@ export function ClientDetailPage() {
 
         {/* Right column */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          <div className="bg-white rounded-card shadow-card p-5">
-            <ClientMessages clientId={client.id} />
+          <div className="bg-white rounded-card shadow-card p-5 flex flex-col">
+            <h3 className="font-sans font-semibold text-lg text-brand-dark mb-4">Conversación</h3>
+            <ChatPanel
+              client={{ id: client.id, full_name: client.full_name, phone: client.phone, channel: client.channel }}
+              className="h-[32rem]"
+            />
           </div>
           <div className="bg-white rounded-card shadow-card p-5">
             <ClientAppointments clientId={client.id} />

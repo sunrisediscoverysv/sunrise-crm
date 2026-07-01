@@ -139,5 +139,64 @@ Deno.serve(async (req: Request) => {
     return json({ status: 'ok', wa_message_id: data?.messages?.[0]?.id ?? null })
   }
 
+  // ── Enviar un mensaje de texto libre (solo dentro de la ventana de 24h) ─────
+  if (action === 'text') {
+    const clientId = body.client_id as string | undefined
+    const to = body.to as string | undefined
+    const text = (body.text as string | undefined)?.trim()
+
+    if (!to || !text) {
+      return json({ error: 'Faltan datos requeridos: to, text.' }, 400)
+    }
+
+    const payload = {
+      messaging_product: 'whatsapp',
+      to: String(to).replace(/[^\d]/g, ''),
+      type: 'text',
+      text: { body: text, preview_url: true },
+    }
+
+    const res = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+    )
+    const data = await res.json()
+    if (!res.ok) {
+      // 131047 = "Re-engagement message": la ventana de 24h de servicio se cerró.
+      // El agente debe usar una plantilla para reabrir la conversación.
+      const metaCode = data?.error?.code
+      if (metaCode === 131047) {
+        return json({
+          error: 'Pasaron más de 24h desde el último mensaje del cliente. Envía una plantilla para reabrir la conversación.',
+          code: 'window_closed',
+        }, 409)
+      }
+      return json({ error: data?.error?.message ?? 'Error al enviar el mensaje', meta: data?.error }, 502)
+    }
+
+    // Registrar el envío en el historial del cliente (service role salta RLS)
+    if (clientId) {
+      const admin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+        { auth: { persistSession: false } },
+      )
+      await admin.from('messages').insert({
+        client_id: clientId,
+        channel: 'whatsapp',
+        direction: 'outbound',
+        content: text,
+        raw_payload: { type: 'text', wa_response: data },
+      })
+      await admin.from('clients').update({ last_contact_at: new Date().toISOString() }).eq('id', clientId)
+    }
+
+    return json({ status: 'ok', wa_message_id: data?.messages?.[0]?.id ?? null })
+  }
+
   return json({ error: `Acción no soportada: ${action}` }, 400)
 })

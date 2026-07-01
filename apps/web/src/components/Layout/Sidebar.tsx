@@ -39,6 +39,15 @@ const navItems = [
     ),
   },
   {
+    to: '/inbox',
+    label: 'Conversaciones',
+    icon: (
+      <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.83l-5 1.66 1.7-4.24A7.9 7.9 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
+    ),
+  },
+  {
     to: '/calendar',
     label: 'Calendario',
     icon: (

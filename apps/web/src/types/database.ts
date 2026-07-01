@@ -79,6 +79,7 @@ export type Database = {
           last_contact_at: string | null
           follow_up_at: string | null
           property_id: string | null
+          agent_last_read_at: string | null
         }
         Insert: {
           id?: string
@@ -98,6 +99,7 @@ export type Database = {
           last_contact_at?: string | null
           follow_up_at?: string | null
           property_id?: string | null
+          agent_last_read_at?: string | null
         }
         Update: {
           id?: string
@@ -117,6 +119,7 @@ export type Database = {
           last_contact_at?: string | null
           follow_up_at?: string | null
           property_id?: string | null
+          agent_last_read_at?: string | null
         }
         Relationships: [
           { foreignKeyName: "clients_stage_id_fkey"; columns: ["stage_id"]; isOneToOne: false; referencedRelation: "pipeline_stages"; referencedColumns: ["id"] },

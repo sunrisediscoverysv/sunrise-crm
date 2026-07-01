@@ -8,6 +8,7 @@ import { StatDetailPage } from './features/dashboard/StatDetailPage'
 import { PipelinePage } from './features/pipeline/PipelinePage'
 import { ClientsPage } from './features/clients/ClientsPage'
 import { ClientDetailPage } from './features/clients/ClientDetailPage'
+import { InboxPage } from './features/inbox/InboxPage'
 import { CalendarPage } from './features/calendar/CalendarPage'
 import { PropertiesPage } from './features/properties/PropertiesPage'
 import { PropertyInsightsPage } from './features/properties/PropertyInsightsPage'
@@ -31,6 +32,7 @@ export default function App() {
                   <Route path="/pipeline" element={<PipelinePage />} />
                   <Route path="/clients" element={<ClientsPage />} />
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
+                  <Route path="/inbox" element={<InboxPage />} />
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/properties" element={<PropertiesPage />} />
                   <Route path="/properties/insights" element={<PropertyInsightsPage />} />
