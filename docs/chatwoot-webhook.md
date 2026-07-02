@@ -29,15 +29,26 @@ respaldo, `clients.phone` tal cual. Es idempotente ante reintentos de Chatwoot
 
 3. Suscribir **solo** el evento `message_created`.
 
+## Autenticación (doble vía, basta una)
+
+1. **Firma HMAC de Chatwoot** (preferida): al crear el webhook, Chatwoot muestra un
+   secret y firma cada petición con `X-Chatwoot-Signature: sha256=HMAC(secret,
+   "{timestamp}.{raw_body}")` + `X-Chatwoot-Timestamp`. Guardar ese secret en
+   `CHATWOOT_WEBHOOK_SECRET`. Se rechazan timestamps a >10 min (anti-replay).
+2. **Token en query string** (`?token=` vs `CHATWOOT_WEBHOOK_TOKEN`): respaldo por
+   si la versión de Chatwoot no firma o firma mal
+   ([issue #13809](https://github.com/chatwoot/chatwoot/issues/13809)).
+
 ## Secrets y deploy
 
 ```bash
 supabase secrets set CHATWOOT_WEBHOOK_TOKEN=<token aleatorio>
+supabase secrets set CHATWOOT_WEBHOOK_SECRET=<secret mostrado por Chatwoot>
 supabase functions deploy chatwoot-webhook
 ```
 
-`verify_jwt = false` ya está en `supabase/config.toml` (Chatwoot no puede enviar
-JWT de Supabase; la autenticación es el token de la query string).
+`verify_jwt = false` ya está en `supabase/config.toml` (Chatwoot no envía JWT de
+Supabase).
 
 ## Prueba manual (curl)
 
