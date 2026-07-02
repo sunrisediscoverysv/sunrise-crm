@@ -105,8 +105,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     <aside
       className={[
         'flex-shrink-0 flex flex-col h-full w-64 bg-brand-dark',
-        // Mobile: slide in/out from left as fixed overlay
+        // Mobile: slide in/out from left as fixed overlay. El padding de
+        // safe-area evita que el logo y la X queden bajo el Dynamic Island
+        // en iPhone (viewport-fit=cover); en desktop env() vale 0.
         'fixed top-0 left-0 z-30 transition-transform duration-300 ease-in-out',
+        'pt-[env(safe-area-inset-top)]',
         isOpen ? 'translate-x-0' : '-translate-x-full',
         // Desktop: static, always visible
         'lg:relative lg:translate-x-0 lg:z-auto',

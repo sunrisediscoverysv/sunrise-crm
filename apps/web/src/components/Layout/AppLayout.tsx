@@ -19,8 +19,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        {/* Mobile top bar */}
-        <header className="lg:hidden flex items-center gap-3 h-14 px-4 bg-brand-dark flex-shrink-0">
+        {/* Mobile top bar. pt-[env(...)]: en iPhone (viewport-fit=cover) el
+            contenido corre bajo el Dynamic Island; sin este padding el botón
+            del menú queda tapado por la barra de estado y no se puede tocar. */}
+        <header className="lg:hidden flex items-center gap-3 min-h-[3.5rem] px-4 pt-[env(safe-area-inset-top)] bg-brand-dark flex-shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
             className="text-white/70 hover:text-white p-1.5 rounded-lg transition-colors"
