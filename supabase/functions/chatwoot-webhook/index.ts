@@ -1,8 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Recibe webhooks de Chatwoot (evento message_created) y refleja en el CRM
-// los mensajes salientes escritos por agentes humanos desde Chatwoot, para
-// que la conversación se vea completa en /inbox mientras dure la transición.
+// la conversación completa mientras dure la transición:
+// - Salientes escritos por agentes humanos → outbound.
+// - Entrantes del cliente cuando la conversación YA NO está en fase bot
+//   (status !== 'pending') → inbound. Chatwoot solo reenvía mensajes a
+//   Botpress durante la fase bot, así que cuando un agente toma la
+//   conversación las respuestas del cliente dejan de pasar por Botpress
+//   (y por botpress-webhook); sin esto, nunca llegarían al CRM.
 //
 // Autenticación (basta con que pase una de las dos):
 // 1. Firma HMAC de Chatwoot: X-Chatwoot-Signature = sha256=HMAC(secret,
@@ -63,6 +68,7 @@ interface ChatwootPayload {
   sender?: { id?: number; name?: string; type?: string } | null
   conversation?: {
     id?: number
+    status?: string
     meta?: { sender?: { phone_number?: string | null; identifier?: string | null } | null } | null
   } | null
 }
@@ -95,14 +101,26 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Invalid JSON body' }, 400)
   }
 
-  // Solo nos interesan los mensajes salientes escritos por agentes humanos
-  // (sender.type === 'user'). Los entrantes ya los registra botpress-webhook,
-  // las notas privadas no son parte de la conversación con el cliente, y los
-  // mensajes del bot (agent_bot) se ignoran para no mezclar orígenes.
+  // Se reflejan dos casos; el resto se ignora (notas privadas, mensajes del
+  // bot/agent_bot, eventos que no son message_created):
+  // - outgoing de agente humano (sender.type 'user') → outbound.
+  // - incoming del contacto (sender.type 'contact') SOLO fuera de la fase bot
+  //   (status !== 'pending'): en fase bot el entrante ya lo registra
+  //   botpress-webhook y aceptarlo aquí lo duplicaría.
   if (payload.event !== 'message_created') return json({ status: 'ignored', reason: 'event' })
-  if (payload.message_type !== 'outgoing') return json({ status: 'ignored', reason: 'message_type' })
   if (payload.private === true) return json({ status: 'ignored', reason: 'private' })
-  if (payload.sender?.type !== 'user') return json({ status: 'ignored', reason: 'sender_type' })
+
+  let direction: 'inbound' | 'outbound'
+  if (payload.message_type === 'outgoing' && payload.sender?.type === 'user') {
+    direction = 'outbound'
+  } else if (payload.message_type === 'incoming' && payload.sender?.type === 'contact') {
+    if (payload.conversation?.status === 'pending') {
+      return json({ status: 'ignored', reason: 'bot_phase' })
+    }
+    direction = 'inbound'
+  } else {
+    return json({ status: 'ignored', reason: 'message_type_sender' })
+  }
 
   const phoneRaw = payload.conversation?.meta?.sender?.phone_number ?? ''
   const phoneDigits = phoneRaw.replace(/\D/g, '')
@@ -160,10 +178,26 @@ Deno.serve(async (req: Request) => {
     if (dupe) return json({ status: 'ignored', reason: 'duplicate' })
   }
 
+  // Red de seguridad contra doble registro Botpress/Chatwoot en la transición
+  // de fase (o si la integración no usa el status 'pending'): si ya existe un
+  // inbound idéntico y muy reciente para este cliente, no lo repetimos.
+  if (direction === 'inbound') {
+    const { data: recentDupe } = await supabase
+      .from('messages')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('direction', 'inbound')
+      .eq('content', content)
+      .gte('created_at', new Date(Date.now() - 90_000).toISOString())
+      .limit(1)
+      .maybeSingle()
+    if (recentDupe) return json({ status: 'ignored', reason: 'recent_duplicate' })
+  }
+
   const { error: insertError } = await supabase.from('messages').insert({
     client_id: clientId,
     channel: 'whatsapp',
-    direction: 'outbound',
+    direction,
     content,
     raw_payload: {
       source: 'chatwoot',

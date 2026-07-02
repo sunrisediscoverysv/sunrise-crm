@@ -6,13 +6,18 @@ Cuando se apague Chatwoot (Fase 7 del roadmap), esta función se elimina junto c
 
 ## Qué refleja y qué no
 
-| Evento en Chatwoot                          | ¿Se refleja? |
-|---------------------------------------------|--------------|
-| Mensaje saliente escrito por un agente      | ✅ Sí        |
-| Mensaje entrante del cliente                | ❌ No (ya lo registra `botpress-webhook`) |
-| Nota privada                                | ❌ No        |
-| Mensaje del bot (`agent_bot`)               | ❌ No        |
-| Saliente a un contacto que el CRM no conoce | ❌ No (el cliente nace del primer entrante) |
+| Evento en Chatwoot                                      | ¿Se refleja? |
+|----------------------------------------------------------|--------------|
+| Mensaje saliente escrito por un agente                   | ✅ Sí (outbound) |
+| Entrante del cliente con conversación en agente (`open`) | ✅ Sí (inbound) — Chatwoot no reenvía a Botpress fuera de la fase bot, así que esta es la única vía al CRM |
+| Entrante del cliente en fase bot (`pending`)             | ❌ No (ya lo registra `botpress-webhook`; aceptarlo duplicaría) |
+| Nota privada                                             | ❌ No        |
+| Mensaje del bot (`agent_bot`)                            | ❌ No        |
+| Mensaje de un contacto que el CRM no conoce              | ❌ No (el cliente nace del primer entrante vía Botpress) |
+
+Red de seguridad extra: un inbound idéntico para el mismo cliente en los últimos
+90 segundos se descarta (cubre la transición de fase bot→agente y setups sin
+status `pending`).
 
 El matching de cliente es por teléfono: `channel_user_id` (dígitos) y, como
 respaldo, `clients.phone` tal cual. Es idempotente ante reintentos de Chatwoot
