@@ -4,8 +4,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // los mensajes salientes escritos por agentes humanos desde Chatwoot, para
 // que la conversación se vea completa en /inbox mientras dure la transición.
 //
-// Chatwoot no permite headers personalizados en sus webhooks, así que la
-// autenticación va como token en la query string: ?token=<CHATWOOT_WEBHOOK_TOKEN>
+// Autenticación (basta con que pase una de las dos):
+// 1. Firma HMAC de Chatwoot: X-Chatwoot-Signature = sha256=HMAC(secret,
+//    "{timestamp}.{raw_body}") con el secret que Chatwoot muestra al crear el
+//    webhook (env CHATWOOT_WEBHOOK_SECRET).
+// 2. Token en la query string: ?token=<CHATWOOT_WEBHOOK_TOKEN>. Se mantiene
+//    como respaldo porque hay versiones de Chatwoot con la firma rota
+//    (github.com/chatwoot/chatwoot/issues/13809) o que no firman.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,6 +31,26 @@ function timingSafeEqual(a: string, b: string): boolean {
     result |= a.charCodeAt(i) ^ b.charCodeAt(i)
   }
   return result === 0
+}
+
+// Verifica la firma HMAC-SHA256 de Chatwoot sobre "{timestamp}.{raw_body}".
+// Rechaza timestamps a más de 10 minutos para evitar replay de peticiones.
+async function verifyChatwootSignature(secret: string, rawBody: string, req: Request): Promise<boolean> {
+  const signature = req.headers.get('x-chatwoot-signature') ?? ''
+  const timestamp = req.headers.get('x-chatwoot-timestamp') ?? ''
+  if (!signature.startsWith('sha256=') || !timestamp) return false
+  const skewSeconds = Math.abs(Date.now() / 1000 - Number(timestamp))
+  if (!Number.isFinite(skewSeconds) || skewSeconds > 600) return false
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${timestamp}.${rawBody}`))
+  const expected = 'sha256=' + [...new Uint8Array(mac)].map(b => b.toString(16).padStart(2, '0')).join('')
+  return timingSafeEqual(signature, expected)
 }
 
 interface ChatwootPayload {
@@ -49,15 +74,23 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  const rawBody = await req.text()
+
   const expectedToken = Deno.env.get('CHATWOOT_WEBHOOK_TOKEN')
   const incomingToken = new URL(req.url).searchParams.get('token') ?? ''
-  if (!expectedToken || !timingSafeEqual(incomingToken, expectedToken)) {
+  const tokenOk = !!expectedToken && timingSafeEqual(incomingToken, expectedToken)
+
+  const signingSecret = Deno.env.get('CHATWOOT_WEBHOOK_SECRET')
+  const signatureOk = !tokenOk && !!signingSecret &&
+    await verifyChatwootSignature(signingSecret, rawBody, req)
+
+  if (!tokenOk && !signatureOk) {
     return json({ error: 'Unauthorized' }, 401)
   }
 
   let payload: ChatwootPayload
   try {
-    payload = await req.json()
+    payload = JSON.parse(rawBody)
   } catch {
     return json({ error: 'Invalid JSON body' }, 400)
   }
