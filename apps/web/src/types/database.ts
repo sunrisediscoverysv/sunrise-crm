@@ -193,6 +193,9 @@ export type Database = {
           content: string | null
           raw_payload: Json | null
           created_at: string
+          wa_message_id: string | null
+          wa_status: string | null
+          wa_error: Json | null
         }
         Insert: {
           id?: string
@@ -202,6 +205,9 @@ export type Database = {
           content?: string | null
           raw_payload?: Json | null
           created_at?: string
+          wa_message_id?: string | null
+          wa_status?: string | null
+          wa_error?: Json | null
         }
         Update: {
           id?: string
@@ -211,6 +217,9 @@ export type Database = {
           content?: string | null
           raw_payload?: Json | null
           created_at?: string
+          wa_message_id?: string | null
+          wa_status?: string | null
+          wa_error?: Json | null
         }
         Relationships: [
           { foreignKeyName: "messages_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clients"; referencedColumns: ["id"] }

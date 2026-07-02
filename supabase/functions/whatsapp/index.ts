@@ -131,6 +131,8 @@ Deno.serve(async (req: Request) => {
         channel: 'whatsapp',
         direction: 'outbound',
         content: summary,
+        wa_message_id: data?.messages?.[0]?.id ?? null,
+        wa_status: 'accepted',
         raw_payload: { template_name: templateName, language, variables, wa_response: data },
       })
       await admin.from('clients').update({ last_contact_at: new Date().toISOString() }).eq('id', clientId)
@@ -190,6 +192,8 @@ Deno.serve(async (req: Request) => {
         channel: 'whatsapp',
         direction: 'outbound',
         content: text,
+        wa_message_id: data?.messages?.[0]?.id ?? null,
+        wa_status: 'accepted',
         raw_payload: { type: 'text', wa_response: data },
       })
       await admin.from('clients').update({ last_contact_at: new Date().toISOString() }).eq('id', clientId)

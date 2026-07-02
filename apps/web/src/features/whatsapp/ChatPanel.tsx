@@ -30,6 +30,19 @@ const channelLabel: Record<string, string> = {
   web_chat: 'Web Chat', other: 'Otro',
 }
 
+// Etiqueta legible del estado de entrega de WhatsApp (columna wa_status).
+const waStatusLabel: Record<string, string> = {
+  accepted: 'Enviado', sent: 'Enviado', delivered: 'Entregado', read: 'Leído', failed: 'No entregado',
+}
+
+function waErrorText(err: unknown): string | null {
+  if (!err || typeof err !== 'object') return null
+  const e = err as { title?: string; message?: string; details?: string; code?: number }
+  const parts = [e.title || e.message, e.details].filter(Boolean)
+  const base = parts.join(' — ') || 'Falló el envío'
+  return e.code ? `${base} (código ${e.code})` : base
+}
+
 function useMessages(clientId: string) {
   return useQuery({
     queryKey: ['messages', clientId],
@@ -134,8 +147,20 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
                         {channelLabel[msg.channel] ?? msg.channel}
                         {' · '}
                         {format(new Date(msg.created_at), 'dd MMM · HH:mm', { locale: es })}
+                        {!isInbound && msg.wa_status && waStatusLabel[msg.wa_status] && (
+                          <>{' · '}
+                            <span className={msg.wa_status === 'failed' ? 'text-red-300 font-medium' : ''}>
+                              {waStatusLabel[msg.wa_status]}
+                            </span>
+                          </>
+                        )}
                       </span>
                     </div>
+                    {!isInbound && msg.wa_status === 'failed' && waErrorText(msg.wa_error) && (
+                      <p className="text-[11px] font-sans text-red-200 mt-1 leading-snug">
+                        {waErrorText(msg.wa_error)}
+                      </p>
+                    )}
                   </div>
                 </div>
               )
