@@ -119,10 +119,13 @@ Deno.serve(async (req: Request) => {
   // Se reflejan dos casos; el resto se ignora (notas privadas, mensajes del
   // bot/agent_bot, eventos que no son message_created):
   // - outgoing de agente humano (sender.type 'user') → outbound.
-  // - incoming del contacto → inbound. En fase bot (status 'pending') el
-  //   entrante ya lo registra botpress-webhook y aceptarlo aquí lo duplicaría.
+  // - incoming del contacto → inbound, SIN mirar conversation.status: en este
+  //   Chatwoot las conversaciones viven en 'pending' aunque un agente ya esté
+  //   respondiendo, así que el status no distingue la fase bot. El posible
+  //   doble registro con botpress-webhook se resuelve con dedup cruzado por
+  //   contenido reciente (aquí y en botpress-webhook).
   //   El sender de un incoming solo puede ser el contacto, así que basta con
-  //   que sender.type no diga otra cosa (en algunos payloads viene ausente).
+  //   que sender.type no diga otra cosa (en estos payloads viene ausente).
   // message_type llega como string en los webhooks, pero se tolera la forma
   // numérica de la API (0 = incoming, 1 = outgoing) por si acaso.
   if (payload.event !== 'message_created') return ignored('event')
@@ -137,7 +140,6 @@ Deno.serve(async (req: Request) => {
   if (messageType === 'outgoing' && senderType === 'user') {
     direction = 'outbound'
   } else if (messageType === 'incoming' && (senderType === null || senderType === 'contact')) {
-    if (payload.conversation?.status === 'pending') return ignored('bot_phase')
     direction = 'inbound'
   } else {
     return ignored('message_type_sender')
@@ -199,9 +201,11 @@ Deno.serve(async (req: Request) => {
     if (dupe) return ignored('duplicate')
   }
 
-  // Red de seguridad contra doble registro Botpress/Chatwoot en la transición
-  // de fase (o si la integración no usa el status 'pending'): si ya existe un
-  // inbound idéntico y muy reciente para este cliente, no lo repetimos.
+  // Dedup cruzado: si botpress-webhook ya registró este mismo entrante hace
+  // poco (mismo cliente y contenido, origen NO chatwoot), no lo repetimos.
+  // Solo se compara contra filas de otras fuentes: dos mensajes idénticos y
+  // seguidos del cliente vía Chatwoot son legítimos (traen distinto
+  // chatwoot_message_id) y no deben tragarse.
   if (direction === 'inbound') {
     const { data: recentDupe } = await supabase
       .from('messages')
@@ -209,6 +213,7 @@ Deno.serve(async (req: Request) => {
       .eq('client_id', clientId)
       .eq('direction', 'inbound')
       .eq('content', content)
+      .or('raw_payload->>source.is.null,raw_payload->>source.neq.chatwoot')
       .gte('created_at', new Date(Date.now() - 90_000).toISOString())
       .limit(1)
       .maybeSingle()

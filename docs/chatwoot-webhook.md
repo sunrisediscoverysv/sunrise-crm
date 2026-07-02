@@ -6,18 +6,23 @@ Cuando se apague Chatwoot (Fase 7 del roadmap), esta función se elimina junto c
 
 ## Qué refleja y qué no
 
-| Evento en Chatwoot                                      | ¿Se refleja? |
-|----------------------------------------------------------|--------------|
-| Mensaje saliente escrito por un agente                   | ✅ Sí (outbound) |
-| Entrante del cliente con conversación en agente (`open`) | ✅ Sí (inbound) — Chatwoot no reenvía a Botpress fuera de la fase bot, así que esta es la única vía al CRM |
-| Entrante del cliente en fase bot (`pending`)             | ❌ No (ya lo registra `botpress-webhook`; aceptarlo duplicaría) |
-| Nota privada                                             | ❌ No        |
-| Mensaje del bot (`agent_bot`)                            | ❌ No        |
-| Mensaje de un contacto que el CRM no conoce              | ❌ No (el cliente nace del primer entrante vía Botpress) |
+| Evento en Chatwoot                          | ¿Se refleja? |
+|----------------------------------------------|--------------|
+| Mensaje saliente escrito por un agente       | ✅ Sí (outbound) |
+| Entrante del cliente (cualquier status)      | ✅ Sí (inbound) |
+| Nota privada                                 | ❌ No        |
+| Mensaje del bot (`agent_bot`)                | ❌ No        |
+| Mensaje de un contacto que el CRM no conoce  | ❌ No (el cliente nace del primer entrante vía Botpress) |
 
-Red de seguridad extra: un inbound idéntico para el mismo cliente en los últimos
-90 segundos se descarta (cubre la transición de fase bot→agente y setups sin
-status `pending`).
+No se filtra por `conversation.status`: en este Chatwoot las conversaciones se
+quedan en `pending` aunque un agente esté respondiendo, así que el status no
+distingue la fase bot.
+
+**Dedup cruzado con `botpress-webhook`** (los entrantes pueden llegar por ambas
+vías): cada lado descarta un inbound idéntico (mismo cliente y contenido) de los
+últimos 90 segundos registrado por **la otra fuente** — `chatwoot-webhook` marca
+sus filas con `raw_payload.source = 'chatwoot'`. Dos mensajes idénticos seguidos
+del cliente por la misma vía no se tragan (distinto `chatwoot_message_id`).
 
 El matching de cliente es por teléfono: `channel_user_id` (dígitos) y, como
 respaldo, `clients.phone` tal cual. Es idempotente ante reintentos de Chatwoot
