@@ -75,5 +75,8 @@ verify_jwt = false
 [functions.whatsapp-webhook]
 verify_jwt = false
 
+[functions.chatwoot-webhook]
+verify_jwt = false
+
 [analytics]
 enabled = false
