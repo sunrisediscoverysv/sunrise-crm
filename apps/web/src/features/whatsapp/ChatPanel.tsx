@@ -31,8 +31,10 @@ const channelLabel: Record<string, string> = {
 }
 
 // Etiqueta legible del estado de entrega de WhatsApp (columna wa_status).
+// 'accepted' = Meta aceptó el envío pero aún no confirma que salió: se muestra
+// con relojito hasta que el webhook de entrega lo suba a sent/delivered/read.
 const waStatusLabel: Record<string, string> = {
-  accepted: 'Enviado', sent: 'Enviado', delivered: 'Entregado', read: 'Leído', failed: 'No entregado',
+  accepted: 'Enviando…', sent: 'Enviado', delivered: 'Entregado', read: 'Leído', failed: 'No entregado',
 }
 
 function waErrorText(err: unknown): string | null {
@@ -78,6 +80,22 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
     () => computeWhatsappWindow(lastInboundAt(messages), nowTick),
     [messages, nowTick],
   )
+
+  // Realtime del hilo: los INSERT ya los cubre la suscripción del inbox, pero
+  // los cambios de estado de entrega (wa_status: relojito → enviado/entregado/
+  // leído/fallido) llegan como UPDATE del webhook de Meta y nadie más los
+  // escucha. Filtrado por cliente para no refetchear hilos ajenos.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`chat-rt-${client.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'messages', filter: `client_id=eq.${client.id}` },
+        () => queryClient.invalidateQueries({ queryKey: ['messages', client.id] }),
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [client.id, queryClient])
 
   // Auto-scroll al último mensaje cuando cambian.
   useEffect(() => {
@@ -149,7 +167,18 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
                         {format(new Date(msg.created_at), 'dd MMM · HH:mm', { locale: es })}
                         {!isInbound && msg.wa_status && waStatusLabel[msg.wa_status] && (
                           <>{' · '}
-                            <span className={msg.wa_status === 'failed' ? 'text-red-300 font-medium' : ''}>
+                            <span
+                              className={[
+                                'inline-flex items-center gap-1 align-bottom',
+                                msg.wa_status === 'failed' ? 'text-red-300 font-medium' : '',
+                              ].join(' ')}
+                            >
+                              {msg.wa_status === 'accepted' && (
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                                  <circle cx="12" cy="12" r="9" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3 2" />
+                                </svg>
+                              )}
                               {waStatusLabel[msg.wa_status]}
                             </span>
                           </>
