@@ -208,14 +208,32 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // Log the raw message
-  await supabase.from('messages').insert({
-    client_id: clientId,
-    channel: payload.channel,
-    direction: 'inbound',
-    content: payload.message ?? null,
-    raw_payload: payload as unknown as Record<string, unknown>,
-  })
+  // Log the raw message. Dedup cruzado con chatwoot-webhook: los entrantes de
+  // WhatsApp llegan por ambas vías (Chatwoot dispara su webhook primero); si
+  // ya existe un inbound idéntico y reciente con origen chatwoot, no se repite.
+  let skipMessageInsert = false
+  if (payload.message) {
+    const { data: chatwootDupe } = await supabase
+      .from('messages')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('direction', 'inbound')
+      .eq('content', payload.message)
+      .eq('raw_payload->>source', 'chatwoot')
+      .gte('created_at', new Date(Date.now() - 90_000).toISOString())
+      .limit(1)
+      .maybeSingle()
+    skipMessageInsert = !!chatwootDupe
+  }
+  if (!skipMessageInsert) {
+    await supabase.from('messages').insert({
+      client_id: clientId,
+      channel: payload.channel,
+      direction: 'inbound',
+      content: payload.message ?? null,
+      raw_payload: payload as unknown as Record<string, unknown>,
+    })
+  }
 
   // Email notification — disabled by default. To enable in production set
   // LEAD_EMAIL_NOTIFICATIONS=true (plus RESEND_API_KEY and NOTIFICATION_EMAIL).
