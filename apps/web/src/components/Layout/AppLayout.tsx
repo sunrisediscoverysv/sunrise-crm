@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Sidebar } from './Sidebar'
+import { MobileNav } from './MobileNav'
 import { InstallPrompt } from '@/components/InstallPrompt'
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -42,6 +43,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <main className="flex-1 min-h-0 overflow-hidden flex flex-col">
           {children}
         </main>
+
+        {/* Barra inferior móvil: destinos diarios al alcance del pulgar. */}
+        <MobileNav onOpenMenu={() => setSidebarOpen(true)} />
       </div>
 
       <InstallPrompt />
