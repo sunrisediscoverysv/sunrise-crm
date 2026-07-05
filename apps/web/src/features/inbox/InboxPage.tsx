@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { updateClient } from '@/lib/mutations'
 import { ChatPanel } from '@/features/whatsapp/ChatPanel'
 import { computeWhatsappWindow } from '@/features/whatsapp/whatsappWindow'
+import { AppointmentModal } from '@/features/calendar/AppointmentModal'
 import { useInboxConversations, type Conversation } from './useInboxConversations'
 import { RegisterClientModal } from './RegisterClientModal'
 
@@ -26,6 +27,7 @@ export function InboxPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [registerFor, setRegisterFor] = useState<Conversation['client'] | null>(null)
+  const [appointmentFor, setAppointmentFor] = useState<string | null>(null)
 
   // Filtro por nombre o teléfono. Para el teléfono comparamos solo dígitos, así
   // "7000 1234", "+503 70001234" o "70001234" encuentran el mismo contacto.
@@ -239,6 +241,17 @@ export function InboxPage() {
                   Agregar como cliente
                 </button>
               )}
+              <button
+                onClick={() => setAppointmentFor(selected.client.id)}
+                title="Agendar cita"
+                aria-label="Agendar cita"
+                className="text-brand-charcoal/45 hover:text-brand-teal hover:bg-brand-teal/10 rounded-button p-1.5 transition-colors flex-shrink-0"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 3v3m8-3v3M4 9h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 13v4m-2-2h4" />
+                </svg>
+              </button>
               <Link
                 to={`/clients/${selected.client.id}`}
                 className="text-xs font-sans text-brand-teal hover:text-brand-deep font-medium flex-shrink-0"
@@ -278,6 +291,15 @@ export function InboxPage() {
           open
           onClose={() => setRegisterFor(null)}
           client={registerFor}
+        />
+      )}
+
+      {appointmentFor && (
+        <AppointmentModal
+          key={appointmentFor}
+          open
+          onClose={() => setAppointmentFor(null)}
+          lockedClientId={appointmentFor}
         />
       )}
     </div>

@@ -71,13 +71,20 @@ export function ClientsTable({ clients, loading }: ClientsTableProps) {
               >
                 <td className="px-6 py-3.5 border-l-4" style={{ borderColor: stage?.color ?? 'transparent' }}>
                   <div>
-                    <Link
-                      to={`/clients/${client.id}`}
-                      onClick={e => e.stopPropagation()}
-                      className="font-medium text-brand-dark font-sans hover:text-brand-teal transition-colors"
-                    >
-                      {client.full_name ?? 'Sin nombre'}
-                    </Link>
+                    <span className="flex items-center gap-1.5">
+                      <Link
+                        to={`/clients/${client.id}`}
+                        onClick={e => e.stopPropagation()}
+                        className="font-medium text-brand-dark font-sans hover:text-brand-teal transition-colors"
+                      >
+                        {client.full_name ?? 'Sin nombre'}
+                      </Link>
+                      {!client.registered && (
+                        <span className="flex-shrink-0 text-[10px] font-sans font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-px leading-4">
+                          No registrado
+                        </span>
+                      )}
+                    </span>
                     {client.phone && (
                       <p className="text-xs text-brand-charcoal/50 font-sans mt-0.5">{client.phone}</p>
                     )}

@@ -18,6 +18,11 @@ const channelOptions = [
   { value: 'other',     label: 'Otro' },
 ]
 
+const registeredOptions = [
+  { value: 'yes', label: 'Registrados' },
+  { value: 'no',  label: 'No registrados' },
+]
+
 export function ClientFiltersBar({ filters, onChange, stages, agents }: ClientFiltersProps) {
   function set<K extends keyof ClientFilters>(key: K, value: ClientFilters[K]) {
     onChange({ ...filters, [key]: value || undefined })
@@ -64,6 +69,17 @@ export function ClientFiltersBar({ filters, onChange, stages, agents }: ClientFi
           options={agents.map(a => ({ value: a.id, label: a.full_name }))}
           value={filters.assignedTo ?? ''}
           onChange={e => set('assignedTo', e.target.value)}
+          className="h-9"
+        />
+      </div>
+
+      {/* Registered */}
+      <div className="w-40">
+        <Select
+          placeholder="Registro"
+          options={registeredOptions}
+          value={filters.registered ?? ''}
+          onChange={e => set('registered', e.target.value as ClientFilters['registered'])}
           className="h-9"
         />
       </div>
