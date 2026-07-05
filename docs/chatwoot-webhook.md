@@ -12,7 +12,8 @@ Cuando se apague Chatwoot (Fase 7 del roadmap), esta función se elimina junto c
 | Entrante del cliente (cualquier status)      | ✅ Sí (inbound) |
 | Nota privada                                 | ❌ No        |
 | Mensaje del bot (`agent_bot`)                | ❌ No        |
-| Mensaje de un contacto que el CRM no conoce  | ❌ No (el cliente nace del primer entrante vía Botpress) |
+| Entrante de un contacto que el CRM no conoce | ✅ Sí — crea un contacto mínimo con `registered = false`; el chat aparece en `/inbox` con el label «No registrado» y el botón «Agregar como cliente» |
+| Saliente hacia un contacto que el CRM no conoce | ❌ No (no hay conversación que mostrar) |
 
 No se filtra por `conversation.status`: en este Chatwoot las conversaciones se
 quedan en `pending` aunque un agente esté respondiendo, así que el status no
@@ -76,5 +77,6 @@ curl -i -X POST "https://<project-ref>.supabase.co/functions/v1/chatwoot-webhook
   }'
 ```
 
-Respuestas esperadas: `{"status":"ok",...}` si el teléfono corresponde a un
-cliente del CRM; `{"status":"ignored","reason":"..."}` si el evento no aplica.
+Respuestas esperadas: `{"status":"ok",...}` si el mensaje se registró (para un
+entrante de un número desconocido también, creando antes el contacto no
+registrado); `{"status":"ignored","reason":"..."}` si el evento no aplica.

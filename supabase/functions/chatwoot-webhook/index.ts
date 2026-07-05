@@ -69,7 +69,7 @@ interface ChatwootPayload {
   conversation?: {
     id?: number
     status?: string
-    meta?: { sender?: { phone_number?: string | null; identifier?: string | null } | null } | null
+    meta?: { sender?: { phone_number?: string | null; identifier?: string | null; name?: string | null } | null } | null
   } | null
 }
 
@@ -182,8 +182,44 @@ Deno.serve(async (req: Request) => {
     clientId = (byPhone as { id: string } | null)?.id ?? null
   }
 
-  // Un saliente hacia un contacto que el CRM no conoce no crea cliente: el
-  // cliente siempre nace del primer mensaje entrante vía botpress-webhook.
+  // Un entrante de un número que el CRM no conoce crea un contacto mínimo NO
+  // registrado (registered = false): así toda conversación aparece en la
+  // bandeja aunque el bot nunca haya capturado datos, y el inbox muestra el
+  // label "No registrado" con el botón "Agregar como cliente". Un saliente
+  // hacia un desconocido sí se sigue ignorando: no hay conversación que mostrar.
+  if (!clientId && direction === 'inbound') {
+    const contactName = payload.conversation?.meta?.sender?.name?.trim() || null
+    const { data: created, error: createError } = await supabase
+      .from('clients')
+      .insert({
+        channel: 'whatsapp',
+        channel_user_id: phoneDigits,
+        full_name: contactName ?? (phoneRaw || phoneDigits),
+        phone: phoneRaw || phoneDigits,
+        source: 'WhatsApp',
+        registered: false,
+        last_contact_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single()
+
+    if (created) {
+      clientId = (created as { id: string }).id
+      console.log(`[chatwoot-webhook] contacto no registrado creado para ${phoneRaw}: ${clientId}`)
+    } else if ((createError as { code?: string } | null)?.code === '23505') {
+      // Carrera con otro webhook concurrente: recuperar el que ganó.
+      const { data: raced } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('channel', 'whatsapp')
+        .eq('channel_user_id', phoneDigits)
+        .maybeSingle()
+      clientId = (raced as { id: string } | null)?.id ?? null
+    } else {
+      console.error('[chatwoot-webhook] error creando contacto no registrado:', createError)
+    }
+  }
+
   if (!clientId) {
     console.log(`[chatwoot-webhook] cliente no encontrado para ${phoneRaw}`)
     return ignored('client_not_found')
