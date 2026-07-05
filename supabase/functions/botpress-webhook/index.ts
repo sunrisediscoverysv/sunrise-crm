@@ -142,8 +142,11 @@ Deno.serve(async (req: Request) => {
     const updates: Record<string, unknown> = { last_contact_at: new Date().toISOString() }
     // Solo pisamos el nombre con uno real; si no hay nombre real pero el cliente
     // existente está sin nombre, lo rellenamos con el teléfono.
-    if (realName != null) updates.full_name = realName
-    else if (!existingClient?.full_name && effectiveName != null) updates.full_name = effectiveName
+    // Un nombre real capturado por el bot promueve al contacto a registrado.
+    if (realName != null) {
+      updates.full_name = realName
+      updates.registered = true
+    } else if (!existingClient?.full_name && effectiveName != null) updates.full_name = effectiveName
     if (payload.phone != null) updates.phone = payload.phone
     if (payload.email != null) updates.email = payload.email
     if (payload.interest_type != null) updates.interest_type = payload.interest_type
@@ -171,6 +174,10 @@ Deno.serve(async (req: Request) => {
         property_id: matchedPropertyId,
         source: payload.source ?? 'Botpress',
         stage_id: firstStage?.id ?? null,
+        // Sin nombre real el contacto queda como no registrado: su chat se ve
+        // en la bandeja con el label "No registrado" hasta que un agente (o el
+        // bot, al capturar el nombre) lo dé de alta.
+        registered: realName != null,
         last_contact_at: new Date().toISOString(),
       })
       .select('id')

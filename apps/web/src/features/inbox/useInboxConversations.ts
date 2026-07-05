@@ -8,6 +8,7 @@ export interface Conversation {
     phone: string | null
     channel: string
     agent_last_read_at: string | null
+    registered: boolean
   }
   lastMessage: {
     content: string | null
@@ -68,7 +69,7 @@ export function useInboxConversations() {
       // 3) Datos de los clientes involucrados.
       const { data: rawClients, error: cErr } = await supabase
         .from('clients')
-        .select('id, full_name, phone, channel, agent_last_read_at')
+        .select('id, full_name, phone, channel, agent_last_read_at, registered')
         .in('id', ids)
       if (cErr) throw cErr
 

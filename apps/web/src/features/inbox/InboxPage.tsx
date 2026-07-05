@@ -8,6 +8,7 @@ import { updateClient } from '@/lib/mutations'
 import { ChatPanel } from '@/features/whatsapp/ChatPanel'
 import { computeWhatsappWindow } from '@/features/whatsapp/whatsappWindow'
 import { useInboxConversations, type Conversation } from './useInboxConversations'
+import { RegisterClientModal } from './RegisterClientModal'
 
 const channelLabel: Record<string, string> = {
   whatsapp: 'WhatsApp', instagram: 'Instagram', messenger: 'Messenger',
@@ -24,6 +25,7 @@ export function InboxPage() {
   const { data: conversations = [], isLoading } = useInboxConversations()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [registerFor, setRegisterFor] = useState<Conversation['client'] | null>(null)
 
   // Filtro por nombre o teléfono. Para el teléfono comparamos solo dígitos, así
   // "7000 1234", "+503 70001234" o "70001234" encuentran el mismo contacto.
@@ -158,9 +160,16 @@ export function InboxPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className={`truncate font-sans text-sm ${c.unread ? 'font-semibold text-brand-dark' : 'font-medium text-brand-charcoal'}`}>
-                            {c.client.full_name ?? c.client.phone ?? 'Sin nombre'}
-                          </p>
+                          <span className="min-w-0 flex items-center gap-1.5">
+                            <p className={`truncate font-sans text-sm ${c.unread ? 'font-semibold text-brand-dark' : 'font-medium text-brand-charcoal'}`}>
+                              {c.client.full_name ?? c.client.phone ?? 'Sin nombre'}
+                            </p>
+                            {!c.client.registered && (
+                              <span className="flex-shrink-0 text-[10px] font-sans font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-px leading-4">
+                                No registrado
+                              </span>
+                            )}
+                          </span>
                           <span className="text-[11px] font-sans text-brand-charcoal/40 flex-shrink-0">
                             {listTime(c.lastMessage.created_at)}
                           </span>
@@ -207,14 +216,29 @@ export function InboxPage() {
                 </span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-sans font-semibold text-sm text-brand-dark">
-                  {selected.client.full_name ?? selected.client.phone ?? 'Sin nombre'}
-                </p>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <p className="truncate font-sans font-semibold text-sm text-brand-dark">
+                    {selected.client.full_name ?? selected.client.phone ?? 'Sin nombre'}
+                  </p>
+                  {!selected.client.registered && (
+                    <span className="flex-shrink-0 text-[10px] font-sans font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-px leading-4">
+                      Usuario no registrado
+                    </span>
+                  )}
+                </div>
                 <p className="truncate text-xs font-sans text-brand-charcoal/45">
                   {channelLabel[selected.client.channel] ?? selected.client.channel}
                   {selected.client.phone ? ` · ${selected.client.phone}` : ''}
                 </p>
               </div>
+              {!selected.client.registered && (
+                <button
+                  onClick={() => setRegisterFor(selected.client)}
+                  className="text-xs font-sans font-medium text-white bg-brand-teal hover:bg-brand-deep rounded-button px-3 py-1.5 transition-colors flex-shrink-0"
+                >
+                  Agregar como cliente
+                </button>
+              )}
               <Link
                 to={`/clients/${selected.client.id}`}
                 className="text-xs font-sans text-brand-teal hover:text-brand-deep font-medium flex-shrink-0"
@@ -247,6 +271,15 @@ export function InboxPage() {
           </div>
         )}
       </div>
+
+      {registerFor && (
+        <RegisterClientModal
+          key={registerFor.id}
+          open
+          onClose={() => setRegisterFor(null)}
+          client={registerFor}
+        />
+      )}
     </div>
   )
 }
