@@ -82,6 +82,14 @@ Deno.serve(async (req: Request) => {
     })
   }
 
+  // Identidad canónica de WhatsApp: channel_user_id = solo dígitos (contrato
+  // compartido con chatwoot-webhook). Botpress suele mandar el userId con '+'
+  // y eso partía a la misma persona en dos contactos.
+  if (payload.channel === 'whatsapp') {
+    const digits = payload.channel_user_id.replace(/\D/g, '')
+    if (digits) payload.channel_user_id = digits
+  }
+
   // Validate field lengths to prevent oversized payloads
   for (const [field, maxLen] of Object.entries(FIELD_MAX_LENGTHS)) {
     const val = (payload as Record<string, unknown>)[field]
