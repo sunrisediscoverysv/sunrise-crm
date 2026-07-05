@@ -137,8 +137,15 @@ Deno.serve(async (req: Request) => {
   const senderType = payload.sender?.type?.toLowerCase() ?? null
 
   let direction: 'inbound' | 'outbound'
+  let isBot = false
   if (messageType === 'outgoing' && senderType === 'user') {
     direction = 'outbound'
+  } else if (messageType === 'outgoing' && senderType === 'agent_bot') {
+    // Respuestas del bot (Botpress vía Chatwoot). Antes se ignoraban y el hilo
+    // del CRM quedaba sin la mitad de la conversación; se reflejan como
+    // outbound marcadas con bot=true para que la UI las etiquete.
+    direction = 'outbound'
+    isBot = true
   } else if (messageType === 'incoming' && (senderType === null || senderType === 'contact')) {
     direction = 'inbound'
   } else {
@@ -266,6 +273,7 @@ Deno.serve(async (req: Request) => {
       chatwoot_message_id: payload.id ?? null,
       chatwoot_conversation_id: payload.conversation?.id ?? null,
       agent_name: payload.sender?.name ?? null,
+      ...(isBot ? { bot: true } : {}),
     },
   })
   if (insertError) {

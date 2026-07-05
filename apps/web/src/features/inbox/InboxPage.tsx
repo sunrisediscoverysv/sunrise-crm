@@ -138,7 +138,7 @@ export function InboxPage() {
               {filtered.map(c => {
                 const isSel = c.client.id === selectedId
                 const preview = c.lastMessage.direction === 'outbound'
-                  ? `Tú: ${c.lastMessage.content ?? ''}`
+                  ? `${c.lastMessage.sender ?? 'Tú'}: ${c.lastMessage.content ?? ''}`
                   : (c.lastMessage.content ?? '—')
                 const win = computeWhatsappWindow(c.lastInboundAt)
                 return (
