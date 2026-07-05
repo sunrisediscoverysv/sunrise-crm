@@ -9,6 +9,7 @@ export interface ClientFilters {
   assignedTo?: string
   from?: string
   to?: string
+  registered?: 'yes' | 'no'
 }
 
 export type LinkedProperty = {
@@ -44,6 +45,7 @@ export function useClients(filters: ClientFilters = {}) {
       if (filters.assignedTo) query = query.eq('assigned_to', filters.assignedTo)
       if (filters.from) query = query.gte('created_at', filters.from)
       if (filters.to) query = query.lte('created_at', filters.to)
+      if (filters.registered) query = query.eq('registered', filters.registered === 'yes')
 
       if (filters.search) {
         const s = `%${filters.search}%`
