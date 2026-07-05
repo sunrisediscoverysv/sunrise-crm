@@ -14,6 +14,8 @@ export interface Conversation {
     content: string | null
     direction: 'inbound' | 'outbound'
     created_at: string
+    /** Remitente de un outbound vía Chatwoot: nombre del agente, o "Bot". */
+    sender: string | null
   }
   lastInboundAt: string | null
   unread: boolean
@@ -36,10 +38,12 @@ export function useInboxConversations() {
         content: string | null
         direction: 'inbound' | 'outbound'
         created_at: string
+        agent: string | null
+        bot: string | null
       }
       const { data: rawMsgs, error } = await supabase
         .from('messages')
-        .select('client_id, content, direction, created_at')
+        .select('client_id, content, direction, created_at, agent:raw_payload->>agent_name, bot:raw_payload->>bot')
         .order('created_at', { ascending: false })
         .limit(SCAN_LIMIT)
       if (error) throw error
@@ -54,8 +58,11 @@ export function useInboxConversations() {
       for (const m of msgs) {
         const existing = byClient.get(m.client_id)
         if (!existing) {
+          const sender = m.direction === 'outbound'
+            ? (m.bot === 'true' ? 'Bot' : m.agent)
+            : null
           byClient.set(m.client_id, {
-            lastMessage: { content: m.content, direction: m.direction, created_at: m.created_at },
+            lastMessage: { content: m.content, direction: m.direction, created_at: m.created_at, sender },
             lastInboundAt: m.direction === 'inbound' ? m.created_at : null,
           })
         } else if (!existing.lastInboundAt && m.direction === 'inbound') {

@@ -45,6 +45,16 @@ function waErrorText(err: unknown): string | null {
   return e.code ? `${base} (código ${e.code})` : base
 }
 
+// Quién envió un outbound: el bot o un agente desde Chatwoot (agent_name en
+// raw_payload). Los enviados desde el CRM no traen remitente y se muestran
+// sin etiqueta, como hasta ahora.
+function outboundSender(msg: Message): string | null {
+  const p = msg.raw_payload as { source?: string; agent_name?: string | null; bot?: boolean } | null
+  if (!p || p.source !== 'chatwoot') return null
+  if (p.bot) return p.agent_name ? `Bot (${p.agent_name})` : 'Bot'
+  return p.agent_name ?? null
+}
+
 function useMessages(clientId: string) {
   return useQuery({
     queryKey: ['messages', clientId],
@@ -162,6 +172,9 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
                     )}
                     <div className={`flex items-center gap-2 mt-1 ${isInbound ? '' : 'justify-end'}`}>
                       <span className={`text-xs font-sans ${isInbound ? 'text-brand-charcoal/40' : 'text-white/50'}`}>
+                        {!isInbound && outboundSender(msg) && (
+                          <>{outboundSender(msg)}{' · '}</>
+                        )}
                         {channelLabel[msg.channel] ?? msg.channel}
                         {' · '}
                         {format(new Date(msg.created_at), 'dd MMM · HH:mm', { locale: es })}
