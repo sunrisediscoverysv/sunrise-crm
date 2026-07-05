@@ -201,8 +201,10 @@ export function InboxPage() {
       >
         {selected ? (
           <>
-            {/* Cabecera del hilo */}
-            <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-brand-light-gray flex-shrink-0">
+            {/* Cabecera del hilo. En móvil las acciones bajan a una segunda
+                fila (flex-wrap + w-full) para que el nombre y el chip de "no
+                registrado" no queden montados entre los botones. */}
+            <div className="flex items-center gap-x-3 gap-y-2 px-4 py-3 bg-white border-b border-brand-light-gray flex-shrink-0 flex-wrap">
               <button
                 onClick={() => setSelectedId(null)}
                 className="md:hidden text-brand-charcoal/50 hover:text-brand-dark p-1 -ml-1"
@@ -223,8 +225,9 @@ export function InboxPage() {
                     {selected.client.full_name ?? selected.client.phone ?? 'Sin nombre'}
                   </p>
                   {!selected.client.registered && (
-                    <span className="flex-shrink-0 text-[10px] font-sans font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-px leading-4">
-                      Usuario no registrado
+                    <span className="flex-shrink-0 whitespace-nowrap text-[10px] font-sans font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-px leading-4">
+                      <span className="hidden sm:inline">Usuario no registrado</span>
+                      <span className="sm:hidden">No registrado</span>
                     </span>
                   )}
                 </div>
@@ -233,31 +236,33 @@ export function InboxPage() {
                   {selected.client.phone ? ` · ${selected.client.phone}` : ''}
                 </p>
               </div>
-              {!selected.client.registered && (
+              <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
+                {!selected.client.registered && (
+                  <button
+                    onClick={() => setRegisterFor(selected.client)}
+                    className="text-xs font-sans font-medium text-white bg-brand-teal hover:bg-brand-deep rounded-button px-3 py-1.5 transition-colors whitespace-nowrap"
+                  >
+                    Agregar como cliente
+                  </button>
+                )}
                 <button
-                  onClick={() => setRegisterFor(selected.client)}
-                  className="text-xs font-sans font-medium text-white bg-brand-teal hover:bg-brand-deep rounded-button px-3 py-1.5 transition-colors flex-shrink-0"
+                  onClick={() => setAppointmentFor(selected.client.id)}
+                  title="Agendar cita"
+                  aria-label="Agendar cita"
+                  className="text-brand-charcoal/45 hover:text-brand-teal hover:bg-brand-teal/10 rounded-button p-1.5 transition-colors"
                 >
-                  Agregar como cliente
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 3v3m8-3v3M4 9h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 13v4m-2-2h4" />
+                  </svg>
                 </button>
-              )}
-              <button
-                onClick={() => setAppointmentFor(selected.client.id)}
-                title="Agendar cita"
-                aria-label="Agendar cita"
-                className="text-brand-charcoal/45 hover:text-brand-teal hover:bg-brand-teal/10 rounded-button p-1.5 transition-colors flex-shrink-0"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 3v3m8-3v3M4 9h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 13v4m-2-2h4" />
-                </svg>
-              </button>
-              <Link
-                to={`/clients/${selected.client.id}`}
-                className="text-xs font-sans text-brand-teal hover:text-brand-deep font-medium flex-shrink-0"
-              >
-                Ver ficha
-              </Link>
+                <Link
+                  to={`/clients/${selected.client.id}`}
+                  className="text-xs font-sans text-brand-teal hover:text-brand-deep font-medium whitespace-nowrap"
+                >
+                  Ver ficha
+                </Link>
+              </div>
             </div>
 
             <ChatPanel
