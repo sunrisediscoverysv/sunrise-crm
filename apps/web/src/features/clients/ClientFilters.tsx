@@ -19,8 +19,8 @@ const channelOptions = [
 ]
 
 const registeredOptions = [
-  { value: 'yes', label: 'Registrados' },
-  { value: 'no',  label: 'No registrados' },
+  { value: 'yes', label: 'Con nombre' },
+  { value: 'no',  label: 'Falta nombre' },
 ]
 
 export function ClientFiltersBar({ filters, onChange, stages, agents }: ClientFiltersProps) {
