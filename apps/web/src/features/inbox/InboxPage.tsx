@@ -10,6 +10,7 @@ import { computeWhatsappWindow } from '@/features/whatsapp/whatsappWindow'
 import { AppointmentModal } from '@/features/calendar/AppointmentModal'
 import { useInboxConversations, type Conversation } from './useInboxConversations'
 import { RegisterClientModal } from './RegisterClientModal'
+import { needsName } from '@/lib/clientName'
 
 const channelLabel: Record<string, string> = {
   whatsapp: 'WhatsApp', instagram: 'Instagram', messenger: 'Messenger',
@@ -166,9 +167,9 @@ export function InboxPage() {
                             <p className={`truncate font-sans text-sm ${c.unread ? 'font-semibold text-brand-dark' : 'font-medium text-brand-charcoal'}`}>
                               {c.client.full_name ?? c.client.phone ?? 'Sin nombre'}
                             </p>
-                            {!c.client.registered && (
+                            {needsName(c.client) && (
                               <span className="flex-shrink-0 text-[10px] font-sans font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-px leading-4">
-                                No registrado
+                                Agregar nombre
                               </span>
                             )}
                           </span>
@@ -224,11 +225,14 @@ export function InboxPage() {
                   <p className="truncate font-sans font-semibold text-sm text-brand-dark">
                     {selected.client.full_name ?? selected.client.phone ?? 'Sin nombre'}
                   </p>
-                  {!selected.client.registered && (
-                    <span className="flex-shrink-0 whitespace-nowrap text-[10px] font-sans font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-px leading-4">
-                      <span className="hidden sm:inline">Usuario no registrado</span>
-                      <span className="sm:hidden">No registrado</span>
-                    </span>
+                  {needsName(selected.client) && (
+                    <button
+                      onClick={() => setRegisterFor(selected.client)}
+                      title="Este contacto ya es cliente; solo falta ponerle nombre"
+                      className="flex-shrink-0 whitespace-nowrap text-[10px] font-sans font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-px leading-4 hover:bg-amber-100 hover:border-amber-300 transition-colors"
+                    >
+                      + Agregar nombre
+                    </button>
                   )}
                 </div>
                 <p className="truncate text-xs font-sans text-brand-charcoal/45">
@@ -237,14 +241,6 @@ export function InboxPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-end">
-                {!selected.client.registered && (
-                  <button
-                    onClick={() => setRegisterFor(selected.client)}
-                    className="text-xs font-sans font-medium text-white bg-brand-teal hover:bg-brand-deep rounded-button px-3 py-1.5 transition-colors whitespace-nowrap"
-                  >
-                    Agregar como cliente
-                  </button>
-                )}
                 <button
                   onClick={() => setAppointmentFor(selected.client.id)}
                   title="Agendar cita"

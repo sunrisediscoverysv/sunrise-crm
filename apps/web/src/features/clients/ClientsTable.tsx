@@ -1,8 +1,11 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChannelBadge, Badge } from '@/components/Badge'
 import { Avatar } from '@/components/Avatar'
 import { EmptyState } from '@/components/EmptyState'
 import type { ClientWithProfile } from '@/hooks/useClients'
+import { needsName } from '@/lib/clientName'
+import { RegisterClientModal } from '@/features/inbox/RegisterClientModal'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -13,6 +16,7 @@ interface ClientsTableProps {
 
 export function ClientsTable({ clients, loading }: ClientsTableProps) {
   const navigate = useNavigate()
+  const [registerFor, setRegisterFor] = useState<ClientWithProfile | null>(null)
 
   if (loading) {
     return (
@@ -45,6 +49,7 @@ export function ClientsTable({ clients, loading }: ClientsTableProps) {
   }
 
   return (
+    <>
     <div className="bg-white rounded-card shadow-card overflow-hidden">
       <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -79,10 +84,14 @@ export function ClientsTable({ clients, loading }: ClientsTableProps) {
                       >
                         {client.full_name ?? 'Sin nombre'}
                       </Link>
-                      {!client.registered && (
-                        <span className="flex-shrink-0 text-[10px] font-sans font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-px leading-4">
-                          No registrado
-                        </span>
+                      {needsName(client) && (
+                        <button
+                          onClick={e => { e.stopPropagation(); setRegisterFor(client) }}
+                          title="Este contacto ya es cliente; solo falta ponerle nombre"
+                          className="flex-shrink-0 text-[10px] font-sans font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-px leading-4 hover:bg-amber-100 hover:border-amber-300 transition-colors"
+                        >
+                          + Agregar nombre
+                        </button>
                       )}
                     </span>
                     {client.phone && (
@@ -134,5 +143,13 @@ export function ClientsTable({ clients, loading }: ClientsTableProps) {
       </table>
       </div>
     </div>
+    {registerFor && (
+      <RegisterClientModal
+        open
+        client={{ id: registerFor.id, full_name: registerFor.full_name, phone: registerFor.phone }}
+        onClose={() => setRegisterFor(null)}
+      />
+    )}
+    </>
   )
 }
