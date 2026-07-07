@@ -37,6 +37,37 @@ export async function addPushSubscription(values: PushSubscriptionInsert): Promi
   if (error) throw new Error(error.message)
 }
 
+// ── Team / user mutations ────────────────────────────────────────────────────
+
+export type NewUserRole = 'admin' | 'agente' | 'visor'
+
+export interface NewUserInput {
+  email: string
+  password: string
+  full_name: string
+  role: NewUserRole
+}
+
+/** Creates an auth account + profile via the admin-create-user edge function. */
+export async function createUser(input: NewUserInput): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('admin-create-user', { body: input })
+  if (error) {
+    // Surface the JSON { error } message returned by the function on 4xx/5xx.
+    let msg = error.message
+    try {
+      const ctx = (error as { context?: Response }).context
+      if (ctx && typeof ctx.json === 'function') msg = (await ctx.json())?.error ?? msg
+    } catch { /* keep default message */ }
+    throw new Error(msg)
+  }
+  if (data?.error) throw new Error(data.error)
+}
+
+export async function updateProfileRole(id: string, role: NewUserRole): Promise<void> {
+  const { error } = await raw.from('profiles').update({ role }).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 // ── Property mutations ───────────────────────────────────────────────────────
 
 export async function createProperty(values: PropertyInsert): Promise<void> {
