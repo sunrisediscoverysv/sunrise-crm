@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useClient } from '@/hooks/useClients'
@@ -81,6 +81,18 @@ export function ClientDetailPage() {
     mutationFn: (date: string | null) => updateClient(id!, { follow_up_at: date }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['client', id] }),
   })
+
+  // Only offer properties that are still on the market. Keep the client's
+  // currently-linked property visible even if it was later archived.
+  const assignableProperties = useMemo(() => {
+    const active = properties.filter(p => p.status === 'available' || p.status === 'reserved')
+    const linkedId = client?.property_id
+    if (linkedId && !active.some(p => p.id === linkedId)) {
+      const cur = properties.find(p => p.id === linkedId)
+      if (cur) return [cur, ...active]
+    }
+    return active
+  }, [properties, client?.property_id])
 
   const updateProperty = useMutation({
     mutationFn: (propertyId: string | null) => updateClient(id!, { property_id: propertyId }),
@@ -192,7 +204,7 @@ export function ClientDetailPage() {
           <div className="bg-white rounded-card shadow-card p-5">
             <h3 className="text-xs font-semibold font-sans text-brand-charcoal/45 uppercase tracking-wider mb-3">Propiedad de interés</h3>
             <Select
-              options={properties.map(p => ({ value: p.id, label: p.name }))}
+              options={assignableProperties.map(p => ({ value: p.id, label: p.name }))}
               value={client.property_id ?? ''}
               onChange={e => updateProperty.mutate(e.target.value || null)}
               placeholder="Vincular propiedad…"

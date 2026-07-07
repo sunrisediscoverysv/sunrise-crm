@@ -44,6 +44,17 @@ export async function createProperty(values: PropertyInsert): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+export async function updatePropertyStatus(id: string, status: Database['public']['Tables']['properties']['Row']['status']): Promise<void> {
+  const { error } = await raw.from('properties').update({ status }).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+// clients.property_id has ON DELETE SET NULL, so interested leads are unlinked automatically.
+export async function deleteProperty(id: string): Promise<void> {
+  const { error } = await raw.from('properties').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 // ── Client mutations ──────────────────────────────────────────────────────────
 
 export async function createClient(values: Omit<ClientInsert, 'id' | 'created_at' | 'updated_at'>): Promise<string> {

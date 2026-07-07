@@ -1,13 +1,26 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useProperties, usePropertyLeadCounts } from '@/hooks/useProperties'
+import { updatePropertyStatus, deleteProperty } from '@/lib/mutations'
 import { EmptyState } from '@/components/EmptyState'
 import { NewPropertyModal } from './NewPropertyModal'
 import { STATUS_META, TYPE_LABEL, fmtMoney } from './propertyMeta'
 import type { Property } from '@/types/database'
 
-function PropertyCard({ property, leadCount }: { property: Property; leadCount: number }) {
+interface PropertyCardProps {
+  property: Property
+  leadCount: number
+  onArchiveToggle: () => void
+  onDelete: () => void
+  busy: boolean
+}
+
+function PropertyCard({ property, leadCount, onArchiveToggle, onDelete, busy }: PropertyCardProps) {
   const status = STATUS_META[property.status]
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const isArchived = property.status === 'off_market'
   return (
     <div className="group bg-white rounded-card shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 overflow-hidden flex flex-col">
       {/* Accent bar por estado */}
@@ -33,6 +46,50 @@ function PropertyCard({ property, leadCount }: { property: Property; leadCount: 
         <span className="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-xs font-bold font-sans bg-white/90 text-brand-dark backdrop-blur-sm">
           {TYPE_LABEL[property.property_type]}
         </span>
+
+        {/* Menú de acciones (archivar / eliminar) */}
+        <div className="absolute bottom-3 right-3">
+          <button
+            onClick={() => { setMenuOpen(o => !o); setConfirmDelete(false) }}
+            disabled={busy}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/90 text-brand-dark backdrop-blur-sm shadow-sm hover:bg-white disabled:opacity-50 transition-colors"
+            title="Acciones"
+          >
+            {busy ? (
+              <span className="h-4 w-4 border-2 border-brand-teal border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>
+            )}
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 bottom-10 w-52 bg-white rounded-xl shadow-card-hover border border-brand-light-gray py-1 z-10 text-left">
+              <button
+                onClick={() => { onArchiveToggle(); setMenuOpen(false) }}
+                className="w-full text-left px-4 py-2 text-sm font-sans text-brand-dark hover:bg-brand-light-gray/50 transition-colors"
+              >
+                {isArchived ? 'Reactivar (Disponible)' : 'Archivar (Fuera de mercado)'}
+              </button>
+              {confirmDelete ? (
+                <div className="px-4 py-2 flex flex-col gap-2">
+                  <p className="text-xs font-sans text-brand-charcoal/60">
+                    {leadCount > 0 ? `${leadCount} lead(s) se desvincularán. ` : ''}¿Eliminar definitivamente?
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={() => { onDelete(); setMenuOpen(false) }} className="flex-1 text-xs font-sans font-semibold text-white bg-red-500 rounded-button py-1.5 hover:bg-red-600 transition-colors">Eliminar</button>
+                    <button onClick={() => setConfirmDelete(false)} className="flex-1 text-xs font-sans text-brand-charcoal/60 rounded-button py-1.5 hover:bg-brand-light-gray/50 transition-colors">Cancelar</button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="w-full text-left px-4 py-2 text-sm font-sans text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  Eliminar
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         {leadCount > 0 && (
           <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-lg text-xs font-bold font-sans bg-brand-dark/85 text-white backdrop-blur-sm flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -83,11 +140,27 @@ function PropertyCard({ property, leadCount }: { property: Property; leadCount: 
 }
 
 export function PropertiesPage() {
+  const queryClient = useQueryClient()
   const { data: properties = [], isLoading } = useProperties()
   const { data: leadCounts = {} } = usePropertyLeadCounts()
   const [typeFilter, setTypeFilter] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [modalOpen, setModalOpen] = useState(false)
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['properties'] })
+    queryClient.invalidateQueries({ queryKey: ['property-lead-counts'] })
+  }
+
+  const archiveMut = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: Property['status'] }) => updatePropertyStatus(id, status),
+    onSuccess: invalidate,
+  })
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteProperty(id),
+    onSuccess: invalidate,
+  })
+  const busyId = archiveMut.isPending ? archiveMut.variables?.id : deleteMut.isPending ? deleteMut.variables : null
 
   const filtered = useMemo(
     () =>
@@ -206,7 +279,16 @@ export function PropertiesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map(p => <PropertyCard key={p.id} property={p} leadCount={leadCounts[p.id] ?? 0} />)}
+            {filtered.map(p => (
+              <PropertyCard
+                key={p.id}
+                property={p}
+                leadCount={leadCounts[p.id] ?? 0}
+                busy={busyId === p.id}
+                onArchiveToggle={() => archiveMut.mutate({ id: p.id, status: p.status === 'off_market' ? 'available' : 'off_market' })}
+                onDelete={() => deleteMut.mutate(p.id)}
+              />
+            ))}
           </div>
         )}
       </div>
