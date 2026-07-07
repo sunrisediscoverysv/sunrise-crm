@@ -78,5 +78,11 @@ verify_jwt = false
 [functions.chatwoot-webhook]
 verify_jwt = false
 
+[functions.google-oauth]
+verify_jwt = false
+
+[functions.google-calendar-sync]
+verify_jwt = false
+
 [analytics]
 enabled = false
