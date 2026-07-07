@@ -12,6 +12,7 @@ import { InboxPage } from './features/inbox/InboxPage'
 import { CalendarPage } from './features/calendar/CalendarPage'
 import { PropertiesPage } from './features/properties/PropertiesPage'
 import { PropertyInsightsPage } from './features/properties/PropertyInsightsPage'
+import { OperationsPage } from './features/operations/OperationsPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/properties" element={<PropertiesPage />} />
                   <Route path="/properties/insights" element={<PropertyInsightsPage />} />
+                  <Route path="/operations" element={<OperationsPage />} />
                   <Route
                     path="/settings"
                     element={

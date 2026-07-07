@@ -65,6 +65,15 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    to: '/operations',
+    label: 'Operaciones',
+    icon: (
+      <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-6h11M9 12V6h11M4 6h.01M4 12h.01M4 18h.01M9 18h11" />
+      </svg>
+    ),
+  },
 ]
 
 const adminNavItems = [

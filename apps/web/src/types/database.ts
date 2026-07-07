@@ -395,6 +395,142 @@ export type Database = {
           { foreignKeyName: "client_attachments_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clients"; referencedColumns: ["id"] }
         ]
       }
+      deals: {
+        Row: {
+          id: string
+          title: string
+          client_id: string | null
+          property_id: string | null
+          agent_id: string | null
+          amount_usd: number
+          commission_usd: number | null
+          status: 'closed' | 'pending' | 'cancelled'
+          closed_at: string
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          client_id?: string | null
+          property_id?: string | null
+          agent_id?: string | null
+          amount_usd?: number
+          commission_usd?: number | null
+          status?: 'closed' | 'pending' | 'cancelled'
+          closed_at?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          client_id?: string | null
+          property_id?: string | null
+          agent_id?: string | null
+          amount_usd?: number
+          commission_usd?: number | null
+          status?: 'closed' | 'pending' | 'cancelled'
+          closed_at?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "deals_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clients"; referencedColumns: ["id"] },
+          { foreignKeyName: "deals_property_id_fkey"; columns: ["property_id"]; isOneToOne: false; referencedRelation: "properties"; referencedColumns: ["id"] },
+          { foreignKeyName: "deals_agent_id_fkey"; columns: ["agent_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }
+        ]
+      }
+      tasks: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          assigned_to: string | null
+          client_id: string | null
+          due_date: string | null
+          priority: 'low' | 'medium' | 'high'
+          status: 'pending' | 'in_progress' | 'done'
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          assigned_to?: string | null
+          client_id?: string | null
+          due_date?: string | null
+          priority?: 'low' | 'medium' | 'high'
+          status?: 'pending' | 'in_progress' | 'done'
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          assigned_to?: string | null
+          client_id?: string | null
+          due_date?: string | null
+          priority?: 'low' | 'medium' | 'high'
+          status?: 'pending' | 'in_progress' | 'done'
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "tasks_assigned_to_fkey"; columns: ["assigned_to"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "tasks_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clients"; referencedColumns: ["id"] }
+        ]
+      }
+      payments: {
+        Row: {
+          id: string
+          deal_id: string | null
+          client_id: string | null
+          amount_usd: number
+          due_date: string | null
+          paid_at: string | null
+          status: 'pending' | 'paid' | 'overdue'
+          note: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          deal_id?: string | null
+          client_id?: string | null
+          amount_usd?: number
+          due_date?: string | null
+          paid_at?: string | null
+          status?: 'pending' | 'paid' | 'overdue'
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          deal_id?: string | null
+          client_id?: string | null
+          amount_usd?: number
+          due_date?: string | null
+          paid_at?: string | null
+          status?: 'pending' | 'paid' | 'overdue'
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "payments_deal_id_fkey"; columns: ["deal_id"]; isOneToOne: false; referencedRelation: "deals"; referencedColumns: ["id"] },
+          { foreignKeyName: "payments_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clients"; referencedColumns: ["id"] }
+        ]
+      }
     }
     Views: Record<string, { Row: Record<string, unknown> }>
     Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }>
@@ -418,6 +554,9 @@ export type Message = Database['public']['Tables']['messages']['Row']
 export type Property = Database['public']['Tables']['properties']['Row']
 export type ClientAttachment = Database['public']['Tables']['client_attachments']['Row']
 export type Appointment = Database['public']['Tables']['appointments']['Row']
+export type Deal = Database['public']['Tables']['deals']['Row']
+export type Task = Database['public']['Tables']['tasks']['Row']
+export type Payment = Database['public']['Tables']['payments']['Row']
 
 export type ClientInsert = Database['public']['Tables']['clients']['Insert']
 export type PropertyInsert = Database['public']['Tables']['properties']['Insert']
@@ -427,6 +566,12 @@ export type ClientCommentInsert = Database['public']['Tables']['client_comments'
 export type StageHistoryInsert = Database['public']['Tables']['stage_history']['Insert']
 export type AppointmentInsert = Database['public']['Tables']['appointments']['Insert']
 export type AppointmentUpdate = Database['public']['Tables']['appointments']['Update']
+export type DealInsert = Database['public']['Tables']['deals']['Insert']
+export type DealUpdate = Database['public']['Tables']['deals']['Update']
+export type TaskInsert = Database['public']['Tables']['tasks']['Insert']
+export type TaskUpdate = Database['public']['Tables']['tasks']['Update']
+export type PaymentInsert = Database['public']['Tables']['payments']['Insert']
+export type PaymentUpdate = Database['public']['Tables']['payments']['Update']
 
 export type UserRole = Database['public']['Enums']['user_role']
 export type Channel = Database['public']['Enums']['channel_type']
