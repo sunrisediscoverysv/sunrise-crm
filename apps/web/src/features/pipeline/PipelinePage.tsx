@@ -52,6 +52,10 @@ export function PipelinePage() {
     }
   }
 
+  // Split the active funnel from the off-funnel "Congelados / Stand By" bins.
+  const activeStages = stages.filter(s => !s.is_frozen)
+  const frozenStages = stages.filter(s => s.is_frozen)
+
   async function onDragEnd(result: DropResult) {
     const { source, destination, draggableId } = result
     if (!destination || destination.droppableId === source.droppableId) return
@@ -165,11 +169,12 @@ export function PipelinePage() {
       ) : (
         <div className="flex-1 overflow-auto">
           <DragDropContext onDragEnd={onDragEnd}>
+            {/* Active funnel */}
             <div
-              className="grid gap-3 p-4 md:gap-4 md:p-6 min-h-full md:auto-rows-fr"
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}
+              className="grid gap-3 px-4 pt-4 md:gap-4 md:px-6 md:pt-6 md:auto-rows-fr"
+              style={{ gridTemplateColumns: `repeat(${activeStages.length || 1}, minmax(240px, 1fr))` }}
             >
-              {stages.map(stage => (
+              {activeStages.map(stage => (
                 <KanbanColumn
                   key={stage.id}
                   stage={stage}
@@ -177,6 +182,34 @@ export function PipelinePage() {
                 />
               ))}
             </div>
+
+            {/* Off-funnel: Congelados / En Stand By */}
+            {frozenStages.length > 0 && (
+              <div className="px-4 pb-6 pt-4 md:px-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-base leading-none">❄️</span>
+                  <h2 className="font-sans text-xs font-bold uppercase tracking-wider text-brand-charcoal/50">
+                    Congelados / En Stand By
+                  </h2>
+                  <div className="flex-1 h-px bg-brand-light-gray" />
+                  <span className="text-[11px] text-brand-charcoal/40 font-sans hidden sm:inline">
+                    Arrastra aquí los leads sin movimiento
+                  </span>
+                </div>
+                <div
+                  className="grid gap-3 md:gap-4"
+                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
+                >
+                  {frozenStages.map(stage => (
+                    <KanbanColumn
+                      key={stage.id}
+                      stage={stage}
+                      clients={clientsByStage[stage.id] ?? []}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </DragDropContext>
         </div>
       )}

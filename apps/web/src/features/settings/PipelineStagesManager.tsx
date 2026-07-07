@@ -108,9 +108,9 @@ function StageRow({ stage, isFirst, isLast, onMoveUp, onMoveDown, onSave, onDele
         <>
           <div className="flex-1 min-w-0">
             <span className="text-sm font-medium text-brand-dark font-sans">{stage.name}</span>
-            {(stage.is_won || stage.is_lost) && (
-              <span className={`ml-2 text-xs font-sans px-2 py-0.5 rounded-pill ${stage.is_won ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
-                {stage.is_won ? 'Ganado' : 'Perdido'}
+            {(stage.is_won || stage.is_lost || stage.is_frozen) && (
+              <span className={`ml-2 text-xs font-sans px-2 py-0.5 rounded-pill ${stage.is_won ? 'bg-emerald-100 text-emerald-700' : stage.is_frozen ? 'bg-slate-100 text-slate-600' : 'bg-red-100 text-red-600'}`}>
+                {stage.is_won ? 'Ganado' : stage.is_frozen ? 'Congelado' : 'Perdido'}
               </span>
             )}
           </div>

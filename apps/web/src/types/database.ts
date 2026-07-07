@@ -38,6 +38,7 @@ export type Database = {
           color: string
           is_won: boolean
           is_lost: boolean
+          is_frozen: boolean
           created_at: string
         }
         Insert: {
@@ -47,6 +48,7 @@ export type Database = {
           color?: string
           is_won?: boolean
           is_lost?: boolean
+          is_frozen?: boolean
           created_at?: string
         }
         Update: {
@@ -56,6 +58,7 @@ export type Database = {
           color?: string
           is_won?: boolean
           is_lost?: boolean
+          is_frozen?: boolean
           created_at?: string
         }
         Relationships: []
