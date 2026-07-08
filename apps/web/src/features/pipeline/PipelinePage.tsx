@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd'
 import { useQueryClient } from '@tanstack/react-query'
 import { KanbanColumn } from './KanbanColumn'
+import { StandbyList } from './StandbyList'
+import { useStandbyDetails } from './useStandbyDetails'
 import { usePipelineStages } from '@/hooks/usePipelineStages'
 import { useClients, type ClientWithProfile } from '@/hooks/useClients'
 import { useProfiles } from '@/hooks/useProfiles'
@@ -55,6 +57,11 @@ export function PipelinePage() {
   // Split the active funnel from the off-funnel "Congelados / Stand By" bins.
   const activeStages = stages.filter(s => !s.is_frozen)
   const frozenStages = stages.filter(s => s.is_frozen)
+
+  // Detalles (inicio, última interacción, quién contestó, comentario) para la
+  // lista de Stand By.
+  const frozenClientIds = frozenStages.flatMap(s => (clientsByStage[s.id] ?? []).map(c => c.id))
+  const { data: standbyDetails = {} } = useStandbyDetails(frozenClientIds)
 
   async function onDragEnd(result: DropResult) {
     const { source, destination, draggableId } = result
@@ -198,11 +205,11 @@ export function PipelinePage() {
                 </div>
                 <div className="flex flex-col gap-4">
                   {frozenStages.map(stage => (
-                    <KanbanColumn
+                    <StandbyList
                       key={stage.id}
                       stage={stage}
                       clients={clientsByStage[stage.id] ?? []}
-                      wide
+                      details={standbyDetails}
                     />
                   ))}
                 </div>
