@@ -78,6 +78,11 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const isWhatsapp = client.channel === 'whatsapp'
+  // Instagram y Messenger se responden a través de la API de Chatwoot.
+  const viaChatwoot = client.channel === 'instagram' || client.channel === 'messenger'
+  const canReply = isWhatsapp || viaChatwoot
+  const channelName = client.channel === 'instagram' ? 'Instagram'
+    : client.channel === 'messenger' ? 'Messenger' : 'WhatsApp'
 
   // Recalcular la ventana de 24h cada minuto para el contador en vivo.
   const [nowTick, setNowTick] = useState(() => Date.now())
@@ -115,11 +120,20 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
 
   const send = useMutation({
     mutationFn: async (text: string) => {
-      if (!client.phone) throw new Error('Este cliente no tiene número de WhatsApp.')
-      const { error } = await supabase.functions.invoke('whatsapp', {
-        body: { action: 'text', client_id: client.id, to: client.phone, text },
-      })
-      if (error) throw new Error(await functionsErrorMessage(error, 'No se pudo enviar el mensaje.'))
+      if (isWhatsapp) {
+        if (!client.phone) throw new Error('Este cliente no tiene número de WhatsApp.')
+        const { error } = await supabase.functions.invoke('whatsapp', {
+          body: { action: 'text', client_id: client.id, to: client.phone, text },
+        })
+        if (error) throw new Error(await functionsErrorMessage(error, 'No se pudo enviar el mensaje.'))
+      } else if (viaChatwoot) {
+        const { error } = await supabase.functions.invoke('chatwoot-send', {
+          body: { client_id: client.id, text },
+        })
+        if (error) throw new Error(await functionsErrorMessage(error, 'No se pudo enviar el mensaje.'))
+      } else {
+        throw new Error('Este canal no permite responder desde el CRM.')
+      }
     },
     onSuccess: () => {
       setDraft('')
@@ -129,7 +143,7 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
     },
   })
 
-  const composerDisabled = !isWhatsapp || !client.phone || !win.open || send.isPending
+  const composerDisabled = !canReply || (isWhatsapp && !client.phone) || !win.open || send.isPending
 
   function submit() {
     const text = draft.trim()
@@ -213,11 +227,11 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
 
       {/* Zona de composición / estado de la ventana */}
       <div className="pt-3 mt-2 border-t border-brand-light-gray">
-        {!isWhatsapp ? (
+        {!canReply ? (
           <p className="text-xs text-brand-charcoal/45 font-sans text-center py-2">
-            Solo se puede responder por aquí a conversaciones de WhatsApp.
+            Este canal no permite responder desde el CRM.
           </p>
-        ) : !client.phone ? (
+        ) : isWhatsapp && !client.phone ? (
           <p className="text-xs text-brand-charcoal/45 font-sans text-center py-2">
             Sin número de WhatsApp registrado.
           </p>
@@ -261,7 +275,7 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
               )}
             </div>
           </>
-        ) : (
+        ) : isWhatsapp ? (
           <div className="bg-amber-50 border border-amber-200 rounded-card px-4 py-3">
             <p className="text-xs font-sans text-amber-800 leading-relaxed mb-2.5">
               {win.lastInboundAt
@@ -278,6 +292,12 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
               Enviar plantilla
             </button>
           </div>
+        ) : (
+          <p className="text-xs text-brand-charcoal/45 font-sans text-center py-3 leading-relaxed">
+            {win.lastInboundAt
+              ? `Pasaron más de 24h desde el último mensaje. En ${channelName} solo puedes responder dentro de las 24h; espera a que el cliente vuelva a escribir.`
+              : `Aún no puedes escribir por ${channelName}: espera a que el cliente inicie la conversación.`}
+          </p>
         )}
       </div>
 

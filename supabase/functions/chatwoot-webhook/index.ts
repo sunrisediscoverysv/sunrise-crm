@@ -65,12 +65,38 @@ interface ChatwootPayload {
   message_type?: string | number
   private?: boolean
   attachments?: unknown[]
+  channel?: string
+  inbox?: { id?: number } | null
   sender?: { id?: number; name?: string; type?: string } | null
   conversation?: {
     id?: number
     status?: string
-    meta?: { sender?: { phone_number?: string | null; identifier?: string | null; name?: string | null } | null } | null
+    channel?: string
+    inbox_id?: number
+    meta?: { sender?: { id?: number; phone_number?: string | null; identifier?: string | null; name?: string | null } | null } | null
   } | null
+}
+
+type Channel = 'whatsapp' | 'instagram' | 'messenger' | 'other'
+
+// Inboxes de Chatwoot de Sunrise → canal del CRM (respaldo cuando el payload
+// no trae la cadena de canal explícita).
+const INBOX_CHANNEL: Record<number, Channel> = {
+  113656: 'whatsapp',
+  116531: 'instagram',
+  116606: 'messenger',
+}
+
+function channelFromString(s: string): Channel | '' {
+  const l = s.toLowerCase()
+  if (l.includes('whatsapp')) return 'whatsapp'
+  if (l.includes('instagram')) return 'instagram'
+  if (l.includes('facebook') || l.includes('messenger')) return 'messenger'
+  return ''
+}
+
+const SOURCE_LABEL: Record<Channel, string> = {
+  whatsapp: 'WhatsApp', instagram: 'Instagram', messenger: 'Messenger', other: 'Chatwoot',
 }
 
 const CONTENT_MAX_LENGTH = 4000
@@ -152,9 +178,28 @@ Deno.serve(async (req: Request) => {
     return ignored('message_type_sender')
   }
 
-  const phoneRaw = payload.conversation?.meta?.sender?.phone_number ?? ''
+  // Detectar el canal (WhatsApp / Instagram / Messenger) desde el payload.
+  const sender = payload.conversation?.meta?.sender ?? null
+  const phoneRaw = sender?.phone_number ?? ''
   const phoneDigits = phoneRaw.replace(/\D/g, '')
-  if (!phoneDigits) return ignored('no_phone')
+
+  const inboxId = payload.conversation?.inbox_id ?? payload.inbox?.id ?? null
+  let channel: Channel =
+    channelFromString(String(payload.conversation?.channel ?? payload.channel ?? '')) ||
+    (inboxId != null ? INBOX_CHANNEL[inboxId] : '') ||
+    (phoneDigits ? 'whatsapp' : 'other')
+
+  // Identidad canónica por canal. WhatsApp usa los dígitos del teléfono
+  // (contrato compartido con botpress-webhook); el resto usa el identificador
+  // del contacto de Chatwoot (Instagram/Messenger no tienen teléfono).
+  let channelUserId: string
+  if (channel === 'whatsapp') {
+    if (!phoneDigits) return ignored('no_phone')
+    channelUserId = phoneDigits
+  } else {
+    channelUserId = String(sender?.identifier ?? sender?.id ?? '')
+    if (!channelUserId) return ignored('no_identifier')
+  }
 
   const hasAttachments = Array.isArray(payload.attachments) && payload.attachments.length > 0
   const content = (payload.content?.trim() || (hasAttachments ? '[Adjunto]' : ''))
@@ -167,19 +212,19 @@ Deno.serve(async (req: Request) => {
     { auth: { persistSession: false } },
   )
 
-  // Buscar el cliente: para WhatsApp, channel_user_id son los dígitos del
-  // teléfono (contrato de botpress-webhook); como respaldo, el teléfono tal
-  // cual llega de Chatwoot (formato +503...).
+  // Buscar el cliente por (canal, channel_user_id). Para WhatsApp hay un
+  // respaldo por teléfono (contactos antiguos guardados con formato +503...).
+  const idLog = channel === 'whatsapp' ? phoneRaw : `${channel}:${channelUserId}`
   let clientId: string | null = null
   const { data: byChannelId } = await supabase
     .from('clients')
     .select('id')
-    .eq('channel', 'whatsapp')
-    .eq('channel_user_id', phoneDigits)
+    .eq('channel', channel)
+    .eq('channel_user_id', channelUserId)
     .maybeSingle()
   clientId = (byChannelId as { id: string } | null)?.id ?? null
 
-  if (!clientId && phoneRaw) {
+  if (!clientId && channel === 'whatsapp' && phoneRaw) {
     const { data: byPhone } = await supabase
       .from('clients')
       .select('id')
@@ -189,21 +234,21 @@ Deno.serve(async (req: Request) => {
     clientId = (byPhone as { id: string } | null)?.id ?? null
   }
 
-  // Un entrante de un número que el CRM no conoce crea un contacto mínimo NO
+  // Un entrante de un contacto que el CRM no conoce crea un contacto mínimo NO
   // registrado (registered = false): así toda conversación aparece en la
   // bandeja aunque el bot nunca haya capturado datos, y el inbox muestra el
   // label "No registrado" con el botón "Agregar como cliente". Un saliente
   // hacia un desconocido sí se sigue ignorando: no hay conversación que mostrar.
   if (!clientId && direction === 'inbound') {
-    const contactName = payload.conversation?.meta?.sender?.name?.trim() || null
+    const contactName = sender?.name?.trim() || null
     const { data: created, error: createError } = await supabase
       .from('clients')
       .insert({
-        channel: 'whatsapp',
-        channel_user_id: phoneDigits,
-        full_name: contactName ?? (phoneRaw || phoneDigits),
-        phone: phoneRaw || phoneDigits,
-        source: 'WhatsApp',
+        channel,
+        channel_user_id: channelUserId,
+        full_name: contactName ?? (phoneRaw || channelUserId),
+        phone: channel === 'whatsapp' ? (phoneRaw || phoneDigits) : null,
+        source: SOURCE_LABEL[channel],
         registered: false,
         last_contact_at: new Date().toISOString(),
       })
@@ -212,14 +257,14 @@ Deno.serve(async (req: Request) => {
 
     if (created) {
       clientId = (created as { id: string }).id
-      console.log(`[chatwoot-webhook] contacto no registrado creado para ${phoneRaw}: ${clientId}`)
+      console.log(`[chatwoot-webhook] contacto no registrado creado para ${idLog}: ${clientId}`)
     } else if ((createError as { code?: string } | null)?.code === '23505') {
       // Carrera con otro webhook concurrente: recuperar el que ganó.
       const { data: raced } = await supabase
         .from('clients')
         .select('id')
-        .eq('channel', 'whatsapp')
-        .eq('channel_user_id', phoneDigits)
+        .eq('channel', channel)
+        .eq('channel_user_id', channelUserId)
         .maybeSingle()
       clientId = (raced as { id: string } | null)?.id ?? null
     } else {
@@ -228,7 +273,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (!clientId) {
-    console.log(`[chatwoot-webhook] cliente no encontrado para ${phoneRaw}`)
+    console.log(`[chatwoot-webhook] cliente no encontrado para ${idLog}`)
     return ignored('client_not_found')
   }
 
@@ -265,7 +310,7 @@ Deno.serve(async (req: Request) => {
 
   const { error: insertError } = await supabase.from('messages').insert({
     client_id: clientId,
-    channel: 'whatsapp',
+    channel,
     direction,
     content,
     raw_payload: {
