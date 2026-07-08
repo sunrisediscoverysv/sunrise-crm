@@ -17,6 +17,36 @@ const channelLabel: Record<string, string> = {
   web_chat: 'Web Chat', other: 'Otro',
 }
 
+// Marca de canal para la esquina del avatar en la lista de conversaciones.
+const CHANNEL_BADGE: Record<string, { bg: string; icon: React.ReactNode }> = {
+  whatsapp: {
+    bg: '#25D366',
+    icon: <path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.9c0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38a9.9 9.9 0 004.73 1.2h.01c5.46 0 9.9-4.45 9.9-9.9C21.94 6.45 17.5 2 12.04 2zm5.8 14.16c-.24.68-1.42 1.32-1.95 1.36-.5.05-.5.4-3.16-.66-2.67-1.06-4.32-3.8-4.45-3.98-.13-.18-1.06-1.4-1.06-2.68 0-1.27.67-1.9.9-2.16.24-.26.52-.32.7-.32l.5.01c.16 0 .38-.06.6.46.22.53.76 1.83.83 1.96.07.13.11.29.02.47-.09.18-.13.29-.26.44l-.4.46c-.13.13-.26.27-.11.53.15.26.66 1.09 1.42 1.76.98.87 1.8 1.14 2.06 1.27.26.13.41.11.56-.07.15-.18.65-.76.82-1.02.17-.26.35-.22.58-.13.24.09 1.52.72 1.78.85.26.13.43.2.5.31.06.11.06.64-.18 1.32z" />,
+  },
+  instagram: {
+    bg: 'linear-gradient(45deg,#feda75,#d62976 45%,#962fbf 80%,#4f5bd5)',
+    icon: <><rect x="6" y="6" width="12" height="12" rx="4" fill="none" stroke="currentColor" strokeWidth="2.2" /><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="2.2" /><circle cx="16.6" cy="7.4" r="1.2" fill="currentColor" /></>,
+  },
+  messenger: {
+    bg: '#0084FF',
+    icon: <path fill="currentColor" d="M12 2C6.3 2 2 6.2 2 11.7c0 3 1.4 5.6 3.7 7.4V22l3.4-1.9c.9.25 1.9.4 2.9.4 5.7 0 10-4.2 10-9.7C22 6.2 17.7 2 12 2zm1 12.1l-2.5-2.7-4.9 2.7 5.4-5.7 2.6 2.7 4.8-2.7-5.4 5.7z" />,
+  },
+}
+
+function ChannelDot({ channel }: { channel: string }) {
+  const meta = CHANNEL_BADGE[channel]
+  if (!meta) return null
+  return (
+    <span
+      className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center text-white"
+      style={{ background: meta.bg }}
+      title={channelLabel[channel] ?? channel}
+    >
+      <svg viewBox="0 0 24 24" className="w-2.5 h-2.5">{meta.icon}</svg>
+    </span>
+  )
+}
+
 function listTime(iso: string): string {
   const d = new Date(iso)
   return isToday(d) ? format(d, 'HH:mm') : format(d, 'dd MMM', { locale: es })
@@ -152,14 +182,15 @@ export function InboxPage() {
                       ].join(' ')}
                     >
                       <div className="relative flex-shrink-0">
-                        <div className="w-11 h-11 rounded-full bg-brand-dark/90 flex items-center justify-center">
+                        <div className={[
+                          'w-11 h-11 rounded-full bg-brand-dark/90 flex items-center justify-center',
+                          c.client.channel === 'whatsapp' && win.open ? 'ring-2 ring-[#25D366] ring-offset-1' : '',
+                        ].join(' ')}>
                           <span className="text-sm font-semibold text-white font-sans">
                             {(c.client.full_name?.[0] ?? '?').toUpperCase()}
                           </span>
                         </div>
-                        {c.client.channel === 'whatsapp' && win.open && (
-                          <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#25D366] border-2 border-white" title="Ventana de 24h abierta" />
-                        )}
+                        <ChannelDot channel={c.client.channel} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
@@ -215,10 +246,13 @@ export function InboxPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <div className="w-9 h-9 rounded-full bg-brand-dark/90 flex items-center justify-center flex-shrink-0">
-                <span className="text-sm font-semibold text-white font-sans">
-                  {(selected.client.full_name?.[0] ?? '?').toUpperCase()}
-                </span>
+              <div className="relative w-9 h-9 flex-shrink-0">
+                <div className="w-9 h-9 rounded-full bg-brand-dark/90 flex items-center justify-center">
+                  <span className="text-sm font-semibold text-white font-sans">
+                    {(selected.client.full_name?.[0] ?? '?').toUpperCase()}
+                  </span>
+                </div>
+                <ChannelDot channel={selected.client.channel} />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 min-w-0">
