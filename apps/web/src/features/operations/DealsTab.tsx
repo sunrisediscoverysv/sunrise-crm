@@ -9,7 +9,7 @@ import { useProfiles } from '@/hooks/useProfiles'
 import { useProperties } from '@/hooks/useProperties'
 import { createDeal, updateDeal, deleteDeal } from '@/lib/mutations'
 import { money, DEAL_STATUS } from './operationsMeta'
-import { OpsModal, Field, MoneyInput, parseAmount, AddButton, RowDelete, INPUT } from './OpsUI'
+import { OpsModal, Field, MoneyInput, parseAmount, AddButton, RowDelete, ClientPicker, LoadError, INPUT } from './OpsUI'
 
 const EMPTY_FORM = {
   title: '', client_id: '', property_id: '', agent_id: '',
@@ -18,7 +18,7 @@ const EMPTY_FORM = {
 
 export function DealsTab() {
   const queryClient = useQueryClient()
-  const { data: deals = [], isLoading } = useDeals()
+  const { data: deals = [], isLoading, error: loadError } = useDeals()
   const { data: clients = [] } = useClients()
   const { data: agents = [] } = useProfiles()
   const { data: properties = [] } = useProperties()
@@ -76,6 +76,8 @@ export function DealsTab() {
         </p>
         <AddButton label="Registrar venta" onClick={() => { setForm(EMPTY_FORM); setError(null); setOpen(true) }} />
       </div>
+
+      <LoadError error={loadError} />
 
       {isLoading ? (
         <div className="flex flex-col gap-2">
@@ -145,17 +147,20 @@ export function DealsTab() {
         <Field label="Título">
           <input className={INPUT} autoFocus placeholder='Ej. "Lote #12 — El Zonte"' value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
         </Field>
+        <Field label="Cliente">
+          <ClientPicker clients={sortedClients} value={form.client_id} onChange={id => setForm(f => ({ ...f, client_id: id }))} />
+        </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Cliente">
-            <select className={INPUT} value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}>
-              <option value="">Sin cliente</option>
-              {sortedClients.map(c => <option key={c.id} value={c.id}>{c.full_name ?? c.phone ?? 'Sin nombre'}</option>)}
-            </select>
-          </Field>
           <Field label="Propiedad">
             <select className={INPUT} value={form.property_id} onChange={e => setForm(f => ({ ...f, property_id: e.target.value }))}>
               <option value="">Sin propiedad</option>
               {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Agente">
+            <select className={INPUT} value={form.agent_id} onChange={e => setForm(f => ({ ...f, agent_id: e.target.value }))}>
+              <option value="">Sin asignar</option>
+              {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
             </select>
           </Field>
           <Field label="Monto (USD)">
@@ -164,13 +169,7 @@ export function DealsTab() {
           <Field label="Comisión (USD)">
             <MoneyInput value={form.commission} onChange={v => setForm(f => ({ ...f, commission: v }))} />
           </Field>
-          <Field label="Agente">
-            <select className={INPUT} value={form.agent_id} onChange={e => setForm(f => ({ ...f, agent_id: e.target.value }))}>
-              <option value="">Sin asignar</option>
-              {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-            </select>
-          </Field>
-          <Field label="Fecha de cierre">
+          <Field label="Fecha de cierre" className="col-span-2">
             <input className={INPUT} type="date" value={form.closed_at} onChange={e => setForm(f => ({ ...f, closed_at: e.target.value }))} />
           </Field>
         </div>

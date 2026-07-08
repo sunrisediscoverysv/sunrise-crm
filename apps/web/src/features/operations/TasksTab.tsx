@@ -9,14 +9,14 @@ import { useProfiles } from '@/hooks/useProfiles'
 import { useAuth } from '@/features/auth/AuthContext'
 import { createTask, updateTask, deleteTask } from '@/lib/mutations'
 import { TASK_PRIORITY } from './operationsMeta'
-import { OpsModal, Field, AddButton, RowDelete, INPUT } from './OpsUI'
+import { OpsModal, Field, AddButton, RowDelete, ClientPicker, LoadError, INPUT } from './OpsUI'
 
 const EMPTY_FORM = { title: '', description: '', assigned_to: '', client_id: '', due_date: '', priority: 'medium' }
 
 export function TasksTab() {
   const queryClient = useQueryClient()
   const { user } = useAuth()
-  const { data: tasks = [], isLoading } = useTasks()
+  const { data: tasks = [], isLoading, error: loadError } = useTasks()
   const { data: clients = [] } = useClients()
   const { data: agents = [] } = useProfiles()
 
@@ -87,6 +87,8 @@ export function TasksTab() {
         </div>
         <AddButton label="Nueva tarea" onClick={() => { setForm(EMPTY_FORM); setError(null); setOpen(true) }} />
       </div>
+
+      <LoadError error={loadError} />
 
       {isLoading ? (
         <div className="flex flex-col gap-2">
@@ -172,17 +174,14 @@ export function TasksTab() {
         <Field label="Detalles (opcional)">
           <textarea className={INPUT + ' min-h-[64px] resize-y'} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
         </Field>
+        <Field label="Cliente (opcional)">
+          <ClientPicker clients={sortedClients} value={form.client_id} onChange={id => setForm(f => ({ ...f, client_id: id }))} />
+        </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Asignar a">
             <select className={INPUT} value={form.assigned_to} onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))}>
               <option value="">Sin asignar</option>
               {agents.map(a => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-            </select>
-          </Field>
-          <Field label="Cliente (opcional)">
-            <select className={INPUT} value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}>
-              <option value="">Sin cliente</option>
-              {sortedClients.map(c => <option key={c.id} value={c.id}>{c.full_name ?? c.phone ?? 'Sin nombre'}</option>)}
             </select>
           </Field>
           <Field label="Fecha límite">

@@ -37,9 +37,11 @@ export function useTasks() {
   return useQuery({
     queryKey: ['tasks'],
     queryFn: async (): Promise<TaskWithRelations[]> => {
+      // tasks tiene DOS FKs a profiles (assigned_to y created_by): hay que
+      // desambiguar el embed o PostgREST rechaza la consulta completa.
       const { data, error } = await supabase
         .from('tasks')
-        .select('*, assignee:profiles(full_name), client:clients(full_name)')
+        .select('*, assignee:profiles!tasks_assigned_to_fkey(full_name), client:clients(full_name)')
         .order('status')
         .order('due_date', { ascending: true, nullsFirst: false })
       if (error) throw error

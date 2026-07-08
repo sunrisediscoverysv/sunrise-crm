@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Button } from '@/components/Button'
 
 // UI compartida del módulo de Operaciones: modal de formulario, campos y
@@ -47,6 +47,98 @@ export function MoneyInput({ value, onChange, placeholder = '0.00', autoFocus = 
 export function parseAmount(v: string): number | null {
   const n = Number(v)
   return v.trim() === '' || !Number.isFinite(n) ? null : n
+}
+
+export interface PickerClient {
+  id: string
+  full_name: string | null
+  phone: string | null
+  email?: string | null
+}
+
+/**
+ * Selector de cliente con buscador: escribe nombre/teléfono/email y elige de
+ * los primeros resultados (reemplaza al <select> gigante con todos los clientes).
+ */
+export function ClientPicker({ clients, value, onChange, placeholder = 'Buscar cliente por nombre, teléfono o email…' }: {
+  clients: PickerClient[]
+  value: string
+  onChange: (id: string) => void
+  placeholder?: string
+}) {
+  const [search, setSearch] = useState('')
+  const selected = clients.find(c => c.id === value) ?? null
+
+  const matches = useMemo(() => {
+    const s = search.trim().toLowerCase()
+    const list = s
+      ? clients.filter(c =>
+          (c.full_name ?? '').toLowerCase().includes(s) ||
+          (c.phone ?? '').toLowerCase().includes(s) ||
+          (c.email ?? '').toLowerCase().includes(s),
+        )
+      : clients
+    return list.slice(0, 8)
+  }, [clients, search])
+
+  if (selected) {
+    return (
+      <div className="flex items-center justify-between gap-3 border border-brand-light-gray rounded-lg px-3 py-2 bg-white">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-brand-dark font-sans truncate">{selected.full_name ?? 'Sin nombre'}</p>
+          {selected.phone && <p className="text-xs text-brand-charcoal/50 font-sans truncate">{selected.phone}</p>}
+        </div>
+        <button
+          type="button"
+          onClick={() => { onChange(''); setSearch('') }}
+          className="text-xs text-brand-teal hover:text-brand-deep font-medium font-sans flex-shrink-0"
+        >
+          Cambiar
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <input
+        className={INPUT}
+        placeholder={placeholder}
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+      {search.trim() && (
+        <div className="mt-1 border border-brand-light-gray rounded-lg divide-y divide-brand-light-gray max-h-52 overflow-y-auto bg-white">
+          {matches.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-brand-charcoal/40 font-sans">Sin resultados</p>
+          ) : (
+            matches.map(c => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => { onChange(c.id); setSearch('') }}
+                className="w-full text-left px-3 py-2 hover:bg-brand-teal/[0.06] transition-colors"
+              >
+                <p className="text-sm text-brand-dark font-sans">{c.full_name ?? 'Sin nombre'}</p>
+                <p className="text-xs text-brand-charcoal/50 font-sans">{c.phone ?? c.email ?? '—'}</p>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Aviso rojo cuando la carga de la lista falla (para no fallar en silencio). */
+export function LoadError({ error }: { error: unknown }) {
+  if (!error) return null
+  const msg = error instanceof Error ? error.message : String(error)
+  return (
+    <p className="text-sm text-red-600 font-sans bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-4">
+      No se pudo cargar la lista: {msg}
+    </p>
+  )
 }
 
 interface OpsModalProps {

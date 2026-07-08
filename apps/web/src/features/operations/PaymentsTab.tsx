@@ -7,13 +7,13 @@ import { usePayments, useDeals } from '@/hooks/useOperations'
 import { useClients } from '@/hooks/useClients'
 import { createPayment, updatePayment, deletePayment } from '@/lib/mutations'
 import { money, PAYMENT_STATUS } from './operationsMeta'
-import { OpsModal, Field, MoneyInput, parseAmount, AddButton, RowDelete, INPUT } from './OpsUI'
+import { OpsModal, Field, MoneyInput, parseAmount, AddButton, RowDelete, ClientPicker, LoadError, INPUT } from './OpsUI'
 
 const EMPTY_FORM = { deal_id: '', client_id: '', amount: '', due_date: '', note: '' }
 
 export function PaymentsTab() {
   const queryClient = useQueryClient()
-  const { data: payments = [], isLoading } = usePayments()
+  const { data: payments = [], isLoading, error: loadError } = usePayments()
   const { data: deals = [] } = useDeals()
   const { data: clients = [] } = useClients()
 
@@ -70,6 +70,8 @@ export function PaymentsTab() {
         </p>
         <AddButton label="Registrar pago" onClick={() => { setForm(EMPTY_FORM); setError(null); setOpen(true) }} />
       </div>
+
+      <LoadError error={loadError} />
 
       {isLoading ? (
         <div className="flex flex-col gap-2">
@@ -155,10 +157,7 @@ export function PaymentsTab() {
           </select>
         </Field>
         <Field label="Cliente">
-          <select className={INPUT} value={form.client_id} onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}>
-            <option value="">Sin cliente</option>
-            {sortedClients.map(c => <option key={c.id} value={c.id}>{c.full_name ?? c.phone ?? 'Sin nombre'}</option>)}
-          </select>
+          <ClientPicker clients={sortedClients} value={form.client_id} onChange={id => setForm(f => ({ ...f, client_id: id }))} />
         </Field>
         <Field label="Nota">
           <input className={INPUT} placeholder="Ej. Cuota 1 de 12, prima, abono…" value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
