@@ -166,10 +166,11 @@ Deno.serve(async (req: Request) => {
   let isBot = false
   if (messageType === 'outgoing' && senderType === 'user') {
     direction = 'outbound'
-  } else if (messageType === 'outgoing' && senderType === 'agent_bot') {
-    // Respuestas del bot (Botpress vía Chatwoot). Antes se ignoraban y el hilo
-    // del CRM quedaba sin la mitad de la conversación; se reflejan como
-    // outbound marcadas con bot=true para que la UI las etiquete.
+  } else if (messageType === 'outgoing' && (senderType === 'agent_bot' || senderType === null)) {
+    // Respuestas del bot vía Chatwoot. En WhatsApp llegan como 'agent_bot';
+    // en Instagram/Messenger el bot sale con sender_type null. Antes esas se
+    // ignoraban y el hilo del CRM quedaba sin las respuestas del bot; se
+    // reflejan como outbound marcadas con bot=true para que la UI las etiquete.
     direction = 'outbound'
     isBot = true
   } else if (messageType === 'incoming' && (senderType === null || senderType === 'contact')) {
