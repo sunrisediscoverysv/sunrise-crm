@@ -90,5 +90,8 @@ verify_jwt = false
 [functions.chatwoot-send]
 verify_jwt = false
 
+[functions.chatwoot-backfill]
+verify_jwt = false
+
 [analytics]
 enabled = false
