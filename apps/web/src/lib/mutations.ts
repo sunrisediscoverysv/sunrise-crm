@@ -7,6 +7,12 @@ import type {
   PropertyInsert,
   AppointmentInsert,
   AppointmentUpdate,
+  DealInsert,
+  DealUpdate,
+  TaskInsert,
+  TaskUpdate,
+  PaymentInsert,
+  PaymentUpdate,
 } from '@/types/database'
 import type { Database } from '@/types/database'
 
@@ -147,6 +153,47 @@ export async function updateAppointment(id: string, values: AppointmentUpdate): 
 
 export async function deleteAppointment(id: string): Promise<void> {
   const { error } = await raw.from('appointments').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+// ── Operations: deals / tasks / payments ─────────────────────────────────────
+
+export async function createDeal(values: DealInsert): Promise<void> {
+  const { error } = await raw.from('deals').insert(values)
+  if (error) throw new Error(error.message)
+}
+export async function updateDeal(id: string, values: DealUpdate): Promise<void> {
+  const { error } = await raw.from('deals').update(values).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+export async function deleteDeal(id: string): Promise<void> {
+  const { error } = await raw.from('deals').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function createTask(values: TaskInsert): Promise<void> {
+  const { error } = await raw.from('tasks').insert(values)
+  if (error) throw new Error(error.message)
+}
+export async function updateTask(id: string, values: TaskUpdate): Promise<void> {
+  const { error } = await raw.from('tasks').update(values).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+export async function deleteTask(id: string): Promise<void> {
+  const { error } = await raw.from('tasks').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function createPayment(values: PaymentInsert): Promise<void> {
+  const { error } = await raw.from('payments').insert(values)
+  if (error) throw new Error(error.message)
+}
+export async function updatePayment(id: string, values: PaymentUpdate): Promise<void> {
+  const { error } = await raw.from('payments').update(values).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+export async function deletePayment(id: string): Promise<void> {
+  const { error } = await raw.from('payments').delete().eq('id', id)
   if (error) throw new Error(error.message)
 }
 
