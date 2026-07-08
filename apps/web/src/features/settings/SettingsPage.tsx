@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useProfiles } from '@/hooks/useProfiles'
-import { createUser, updateProfileRole, type NewUserRole } from '@/lib/mutations'
+import { createUser, deleteUser, updateProfileRole, type NewUserRole } from '@/lib/mutations'
+import { useAuth } from '@/features/auth/AuthContext'
 import { PipelineStagesManager } from './PipelineStagesManager'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
@@ -36,13 +37,13 @@ function NewUserForm() {
   const [password, setPassword] = useState(randomPassword())
   const [role, setRole] = useState<NewUserRole>('agente')
   const [error, setError] = useState<string | null>(null)
-  const [created, setCreated] = useState<{ email: string; password: string } | null>(null)
+  const [created, setCreated] = useState<{ email: string; password: string; emailSent: boolean } | null>(null)
 
   const mut = useMutation({
     mutationFn: () => createUser({ email: email.trim(), password, full_name: fullName.trim(), role }),
-    onSuccess: () => {
+    onSuccess: res => {
       queryClient.invalidateQueries({ queryKey: ['profiles'] })
-      setCreated({ email: email.trim(), password })
+      setCreated({ email: email.trim(), password, emailSent: res.emailSent })
       setFullName(''); setEmail(''); setRole('agente')
     },
     onError: (e: Error) => setError(e.message),
@@ -60,9 +61,15 @@ function NewUserForm() {
     return (
       <div className="bg-white rounded-card border border-emerald-300 p-4 flex flex-col gap-2 mb-4">
         <p className="text-sm font-medium text-emerald-700 font-sans">✓ Usuario creado</p>
-        <p className="text-sm text-brand-dark font-sans">
-          Comparte estas credenciales con <strong>{created.email}</strong>:
-        </p>
+        {created.emailSent ? (
+          <p className="text-sm text-brand-dark font-sans">
+            📧 Se envió un correo a <strong>{created.email}</strong> con sus credenciales. Por si acaso, aquí las tienes también:
+          </p>
+        ) : (
+          <p className="text-sm text-amber-700 font-sans">
+            ⚠️ No se pudo enviar el correo automático — comparte estas credenciales con <strong>{created.email}</strong> manualmente:
+          </p>
+        )}
         <div className="bg-brand-light-gray/40 rounded-button p-3 font-mono text-sm text-brand-dark break-all select-all">
           <div>Email: {created.email}</div>
           <div>Contraseña: {created.password}</div>
@@ -136,7 +143,49 @@ function RoleSelect({ profile }: { profile: Profile }) {
   )
 }
 
+function DeleteMember({ profile }: { profile: Profile }) {
+  const queryClient = useQueryClient()
+  const [confirming, setConfirming] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const mut = useMutation({
+    mutationFn: () => deleteUser(profile.id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['profiles'] }),
+    onError: (e: Error) => setError(e.message),
+  })
+
+  if (error) {
+    return <span className="text-[11px] text-red-500 font-sans max-w-[160px]" title={error}>No se pudo eliminar</span>
+  }
+  if (confirming) {
+    return (
+      <span className="flex items-center gap-1.5">
+        <button
+          onClick={() => mut.mutate()}
+          disabled={mut.isPending}
+          className="text-xs font-sans font-semibold text-white bg-red-500 rounded-button px-2.5 py-1 hover:bg-red-600 disabled:opacity-50"
+        >
+          {mut.isPending ? 'Eliminando…' : 'Sí, eliminar'}
+        </button>
+        <button onClick={() => setConfirming(false)} className="text-xs font-sans text-brand-charcoal/60 px-1.5 py-1 hover:text-brand-dark">No</button>
+      </span>
+    )
+  }
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="text-brand-charcoal/30 hover:text-red-500 transition-colors p-1"
+      title={`Eliminar a ${profile.full_name}`}
+      aria-label="Eliminar usuario"
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    </button>
+  )
+}
+
 function TeamTab() {
+  const { user } = useAuth()
   const { data: profiles = [], isLoading } = useProfiles()
 
   if (isLoading) {
@@ -171,6 +220,7 @@ function TeamTab() {
               <p className="text-sm font-medium text-brand-dark font-sans truncate">{profile.full_name}</p>
             </div>
             <RoleSelect profile={profile} />
+            {profile.id !== user?.id && <DeleteMember profile={profile} />}
           </div>
         ))
       )}

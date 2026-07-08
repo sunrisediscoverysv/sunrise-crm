@@ -54,18 +54,28 @@ export interface NewUserInput {
   role: NewUserRole
 }
 
+async function functionError(error: unknown): Promise<string> {
+  // Surface the JSON { error } message returned by the function on 4xx/5xx.
+  let msg = (error as Error).message
+  try {
+    const ctx = (error as { context?: Response }).context
+    if (ctx && typeof ctx.json === 'function') msg = (await ctx.json())?.error ?? msg
+  } catch { /* keep default message */ }
+  return msg
+}
+
 /** Creates an auth account + profile via the admin-create-user edge function. */
-export async function createUser(input: NewUserInput): Promise<void> {
+export async function createUser(input: NewUserInput): Promise<{ emailSent: boolean }> {
   const { data, error } = await supabase.functions.invoke('admin-create-user', { body: input })
-  if (error) {
-    // Surface the JSON { error } message returned by the function on 4xx/5xx.
-    let msg = error.message
-    try {
-      const ctx = (error as { context?: Response }).context
-      if (ctx && typeof ctx.json === 'function') msg = (await ctx.json())?.error ?? msg
-    } catch { /* keep default message */ }
-    throw new Error(msg)
-  }
+  if (error) throw new Error(await functionError(error))
+  if (data?.error) throw new Error(data.error)
+  return { emailSent: !!data?.email_sent }
+}
+
+/** Deletes a CRM user (auth account + profile) via the admin-delete-user edge function. */
+export async function deleteUser(userId: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('admin-delete-user', { body: { user_id: userId } })
+  if (error) throw new Error(await functionError(error))
   if (data?.error) throw new Error(data.error)
 }
 

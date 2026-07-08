@@ -72,7 +72,42 @@ Deno.serve(async (req: Request) => {
       .from('profiles').update({ role, full_name: fullName }).eq('id', created.user.id)
     if (profileErr) return json({ error: profileErr.message }, 400)
 
-    return json({ ok: true, id: created.user.id, email, role })
+    // 5. Email the credentials to the new user (best-effort: if Resend fails —
+    //    e.g. unverified domain — the account still exists and the UI shows the
+    //    credentials to share manually).
+    let emailSent = false
+    const resendKey = Deno.env.get('RESEND_API_KEY')
+    const appUrl = Deno.env.get('APP_URL') || 'https://sunrise-crm-drab.vercel.app'
+    if (resendKey) {
+      try {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
+          body: JSON.stringify({
+            from: 'CRM Sunrise Discovery <onboarding@resend.dev>',
+            to: [email],
+            subject: 'Tu acceso al CRM de Sunrise Discovery',
+            html: `
+              <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+                <h2 style="color:#114252">Bienvenido/a al CRM de Sunrise Discovery</h2>
+                <p style="color:#2d2f39">Hola ${fullName}, se creó una cuenta para ti. Estas son tus credenciales:</p>
+                <table style="background:#f7f8f9;border-radius:12px;padding:8px;width:100%">
+                  <tr><td style="padding:8px 12px;color:#666;font-size:14px">Usuario</td><td style="padding:8px 12px;font-size:14px"><strong>${email}</strong></td></tr>
+                  <tr><td style="padding:8px 12px;color:#666;font-size:14px">Contraseña temporal</td><td style="padding:8px 12px;font-size:14px"><strong>${password}</strong></td></tr>
+                </table>
+                <p style="margin-top:16px"><a href="${appUrl}" style="background:#03a5af;color:#fff;padding:10px 18px;border-radius:12px;text-decoration:none;font-size:14px">Entrar al CRM</a></p>
+                <p style="color:#888;font-size:12px;margin-top:16px">Te recomendamos cambiar la contraseña después de tu primer inicio de sesión.</p>
+              </div>`,
+          }),
+        })
+        emailSent = res.ok
+        if (!res.ok) console.error('[admin-create-user] resend error:', await res.text())
+      } catch (e) {
+        console.error('[admin-create-user] resend exception:', e)
+      }
+    }
+
+    return json({ ok: true, id: created.user.id, email, role, email_sent: emailSent })
   } catch (e) {
     return json({ error: String(e), version: VERSION }, 500)
   }
