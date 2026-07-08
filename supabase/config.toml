@@ -78,5 +78,8 @@ verify_jwt = false
 [functions.chatwoot-webhook]
 verify_jwt = false
 
+[functions.admin-create-user]
+verify_jwt = false
+
 [analytics]
 enabled = false
