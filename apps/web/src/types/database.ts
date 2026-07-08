@@ -327,6 +327,7 @@ export type Database = {
           created_by: string | null
           created_at: string
           updated_at: string
+          google_event_id: string | null
         }
         Insert: {
           id?: string
@@ -342,6 +343,7 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           updated_at?: string
+          google_event_id?: string | null
         }
         Update: {
           id?: string
@@ -357,11 +359,45 @@ export type Database = {
           created_by?: string | null
           created_at?: string
           updated_at?: string
+          google_event_id?: string | null
         }
         Relationships: [
           { foreignKeyName: "appointments_client_id_fkey"; columns: ["client_id"]; isOneToOne: false; referencedRelation: "clients"; referencedColumns: ["id"] },
           { foreignKeyName: "appointments_assigned_to_fkey"; columns: ["assigned_to"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] }
         ]
+      }
+      google_calendar_tokens: {
+        Row: {
+          user_id: string
+          access_token: string
+          refresh_token: string | null
+          token_expiry: string | null
+          google_email: string | null
+          scope: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          access_token: string
+          refresh_token?: string | null
+          token_expiry?: string | null
+          google_email?: string | null
+          scope?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          access_token?: string
+          refresh_token?: string | null
+          token_expiry?: string | null
+          google_email?: string | null
+          scope?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       client_attachments: {
         Row: {

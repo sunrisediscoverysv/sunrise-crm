@@ -5,6 +5,7 @@ import { useClients } from '@/hooks/useClients'
 import { useProfiles } from '@/hooks/useProfiles'
 import { useAuth } from '@/features/auth/AuthContext'
 import { createAppointment, updateAppointment, deleteAppointment } from '@/lib/mutations'
+import { syncAppointmentToGoogle, deleteAppointmentFromGoogle } from '@/hooks/useGoogleCalendar'
 import { Select } from '@/components/Select'
 import { TYPE_OPTIONS, STATUS_OPTIONS } from './appointmentMeta'
 import type { AppointmentWithRelations } from '@/hooks/useAppointments'
@@ -91,8 +92,11 @@ export function AppointmentModal({ open, onClose, appointment, defaultDate, lock
       }
       if (isEdit && appointment) {
         await updateAppointment(appointment.id, payload)
+        // Refleja el cambio en Google Calendar (best-effort; no bloquea el guardado).
+        await syncAppointmentToGoogle(appointment.id)
       } else {
-        await createAppointment({ ...payload, created_by: profile?.id ?? null })
+        const newId = await createAppointment({ ...payload, created_by: profile?.id ?? null })
+        await syncAppointmentToGoogle(newId)
       }
     },
     onSuccess: () => {
@@ -104,7 +108,10 @@ export function AppointmentModal({ open, onClose, appointment, defaultDate, lock
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      if (appointment) await deleteAppointment(appointment.id)
+      if (appointment) {
+        await deleteAppointmentFromGoogle(appointment.google_event_id)
+        await deleteAppointment(appointment.id)
+      }
     },
     onSuccess: () => {
       invalidate()

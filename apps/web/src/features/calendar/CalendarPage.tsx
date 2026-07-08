@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
   addMonths, subMonths, isSameMonth, isToday, format,
@@ -7,6 +8,7 @@ import { es } from 'date-fns/locale'
 import { useAppointments, type AppointmentWithRelations } from '@/hooks/useAppointments'
 import { TYPE_COLOR, TYPE_LABEL, STATUS_COLOR, STATUS_LABEL } from './appointmentMeta'
 import { AppointmentModal } from './AppointmentModal'
+import { GoogleCalendarButton } from './GoogleCalendarButton'
 
 type View = 'month' | 'agenda'
 
@@ -45,6 +47,25 @@ export function CalendarPage() {
     [gridStart, gridEnd],
   )
 
+  const queryClient = useQueryClient()
+  const [googleNotice, setGoogleNotice] = useState<'connected' | 'error' | null>(null)
+
+  // Al volver del consentimiento de Google (?google=connected|error): muestra
+  // aviso, refresca el estado de conexión y limpia el query param de la URL.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const g = params.get('google')
+    if (g === 'connected' || g === 'error') {
+      setGoogleNotice(g)
+      if (g === 'connected') queryClient.invalidateQueries({ queryKey: ['google-connection'] })
+      params.delete('google')
+      const qs = params.toString()
+      window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''))
+      const t = setTimeout(() => setGoogleNotice(null), 6000)
+      return () => clearTimeout(t)
+    }
+  }, [queryClient])
+
   function openNew(date?: Date | null) {
     setEditing(null)
     setDefaultDate(date ?? null)
@@ -69,16 +90,30 @@ export function CalendarPage() {
               {appointments.length} cita{appointments.length !== 1 ? 's' : ''} este mes
             </p>
           </div>
-          <button
-            onClick={() => openNew(new Date())}
-            className="flex items-center gap-1.5 px-4 py-2 bg-brand-teal text-white text-sm font-medium font-sans rounded-button shadow-[0_4px_14px_-4px_rgba(3,165,175,0.5)] hover:bg-brand-deep hover:-translate-y-px active:translate-y-0 transition-all duration-200"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Nueva cita
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <GoogleCalendarButton />
+            <button
+              onClick={() => openNew(new Date())}
+              className="flex items-center gap-1.5 px-4 py-2 bg-brand-teal text-white text-sm font-medium font-sans rounded-button shadow-[0_4px_14px_-4px_rgba(3,165,175,0.5)] hover:bg-brand-deep hover:-translate-y-px active:translate-y-0 transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Nueva cita
+            </button>
+          </div>
         </div>
+
+        {googleNotice && (
+          <div className={[
+            'mb-4 px-4 py-2.5 rounded-button text-sm font-sans flex items-center gap-2',
+            googleNotice === 'connected' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600',
+          ].join(' ')}>
+            {googleNotice === 'connected'
+              ? '✓ Google Calendar conectado. Las nuevas citas se agregarán a tu calendario.'
+              : 'No se pudo conectar con Google Calendar. Intenta de nuevo.'}
+          </div>
+        )}
 
         {/* Toolbar: navegación de mes + toggle de vista */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
