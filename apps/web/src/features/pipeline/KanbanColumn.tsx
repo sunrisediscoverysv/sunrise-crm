@@ -6,9 +6,11 @@ import type { ClientWithProfile } from '@/hooks/useClients'
 interface KanbanColumnProps {
   stage: PipelineStage
   clients: ClientWithProfile[]
+  /** Columna a todo el ancho con tarjetas en cuadrícula (para el bin de Congelados). */
+  wide?: boolean
 }
 
-export function KanbanColumn({ stage, clients }: KanbanColumnProps) {
+export function KanbanColumn({ stage, clients, wide = false }: KanbanColumnProps) {
   return (
     <div className="flex flex-col w-full md:h-full">
       {/* Column header — solid Monday-style group bar */}
@@ -25,20 +27,26 @@ export function KanbanColumn({ stage, clients }: KanbanColumnProps) {
       </div>
 
       {/* Droppable area */}
-      <Droppable droppableId={stage.id}>
+      <Droppable droppableId={stage.id} direction={wide ? 'horizontal' : 'vertical'}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={[
-              'flex flex-col gap-2.5 flex-1 rounded-b-card p-2.5 min-h-[56px] md:min-h-[80px] transition-colors duration-150',
+              'rounded-b-card p-2.5 min-h-[56px] md:min-h-[80px] transition-colors duration-150',
+              wide
+                ? 'grid gap-2.5 [grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]'
+                : 'flex flex-col gap-2.5 flex-1',
               snapshot.isDraggingOver
                 ? 'bg-brand-teal/5 ring-1 ring-brand-teal/30'
                 : 'bg-[#ededef]',
             ].join(' ')}
           >
             {clients.length === 0 && !snapshot.isDraggingOver && (
-              <div className="flex items-center justify-center h-16 text-xs text-brand-charcoal/35 font-sans italic select-none">
+              <div className={[
+                'flex items-center justify-center h-16 text-xs text-brand-charcoal/35 font-sans italic select-none',
+                wide ? 'col-span-full' : '',
+              ].join(' ')}>
                 Sin clientes
               </div>
             )}

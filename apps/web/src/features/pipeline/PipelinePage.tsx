@@ -196,15 +196,13 @@ export function PipelinePage() {
                     Arrastra aquí los leads sin movimiento
                   </span>
                 </div>
-                <div
-                  className="grid gap-3 md:gap-4"
-                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
-                >
+                <div className="flex flex-col gap-4">
                   {frozenStages.map(stage => (
                     <KanbanColumn
                       key={stage.id}
                       stage={stage}
                       clients={clientsByStage[stage.id] ?? []}
+                      wide
                     />
                   ))}
                 </div>
