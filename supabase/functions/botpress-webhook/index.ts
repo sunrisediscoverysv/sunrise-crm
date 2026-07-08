@@ -82,6 +82,17 @@ Deno.serve(async (req: Request) => {
     })
   }
 
+  // Instagram/Messenger los maneja EXCLUSIVAMENTE Chatwoot (usa un id de
+  // contacto estable). Botpress asigna un userId nuevo por sesión, así que
+  // crear contactos aquí duplicaba a la misma persona cada vez que volvía a
+  // escribir. Chatwoot ya recibe todos esos mensajes (webhook a nivel de cuenta).
+  if (payload.channel === 'instagram' || payload.channel === 'messenger') {
+    return new Response(JSON.stringify({ status: 'ignored', reason: 'handled_by_chatwoot' }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
   // Identidad canónica de WhatsApp: channel_user_id = solo dígitos (contrato
   // compartido con chatwoot-webhook). Botpress suele mandar el userId con '+'
   // y eso partía a la misma persona en dos contactos.
