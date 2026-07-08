@@ -2,12 +2,16 @@ import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/features/auth/AuthContext'
 
+type Role = 'admin' | 'agente' | 'visor'
+
 interface ProtectedRouteProps {
   children: ReactNode
-  requiredRole?: 'admin' | 'agente' | 'visor'
+  requiredRole?: Role
+  /** Roles a los que se les niega el acceso (admin nunca se bloquea). */
+  blockRoles?: Role[]
 }
 
-export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requiredRole, blockRoles }: ProtectedRouteProps) {
   const { session, profile, loading } = useAuth()
 
   if (loading) {
@@ -21,6 +25,11 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   if (!session) return <Navigate to="/login" replace />
 
   if (requiredRole && profile?.role !== requiredRole && profile?.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  // Bloqueo por rol (admin es super-usuario y nunca se bloquea).
+  if (blockRoles && profile?.role && profile.role !== 'admin' && blockRoles.includes(profile.role)) {
     return <Navigate to="/dashboard" replace />
   }
 

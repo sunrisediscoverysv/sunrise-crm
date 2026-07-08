@@ -35,9 +35,9 @@ export default function App() {
                   <Route path="/clients/:id" element={<ClientDetailPage />} />
                   <Route path="/inbox" element={<InboxPage />} />
                   <Route path="/calendar" element={<CalendarPage />} />
-                  <Route path="/properties" element={<PropertiesPage />} />
-                  <Route path="/properties/insights" element={<PropertyInsightsPage />} />
-                  <Route path="/operations" element={<OperationsPage />} />
+                  <Route path="/properties" element={<ProtectedRoute blockRoles={['agente']}><PropertiesPage /></ProtectedRoute>} />
+                  <Route path="/properties/insights" element={<ProtectedRoute blockRoles={['agente']}><PropertyInsightsPage /></ProtectedRoute>} />
+                  <Route path="/operations" element={<ProtectedRoute blockRoles={['agente']}><OperationsPage /></ProtectedRoute>} />
                   <Route
                     path="/settings"
                     element={

@@ -10,7 +10,15 @@ interface SidebarProps {
   onClose: () => void
 }
 
-const navItems = [
+interface NavItem {
+  to: string
+  label: string
+  icon: React.ReactNode
+  /** Roles a los que NO se les muestra este ítem (admin siempre lo ve). */
+  blockRoles?: string[]
+}
+
+const navItems: NavItem[] = [
   {
     to: '/dashboard',
     label: 'Dashboard',
@@ -59,6 +67,7 @@ const navItems = [
   {
     to: '/properties',
     label: 'Propiedades',
+    blockRoles: ['agente'],
     icon: (
       <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3M9 9v.01M9 12v.01M9 15v.01M9 18v.01" />
@@ -68,6 +77,7 @@ const navItems = [
   {
     to: '/operations',
     label: 'Operaciones',
+    blockRoles: ['agente'],
     icon: (
       <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-6h11M9 12V6h11M4 6h.01M4 12h.01M4 18h.01M9 18h11" />
@@ -157,9 +167,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-5 overflow-y-auto">
         <ul className="flex flex-col gap-0.5">
-          {navItems.map(({ to, label, icon }) => (
-            <li key={to}>{navLink(to, label, icon)}</li>
-          ))}
+          {navItems
+            .filter(item => profile?.role === 'admin' || !item.blockRoles?.includes(profile?.role ?? ''))
+            .map(({ to, label, icon }) => (
+              <li key={to}>{navLink(to, label, icon)}</li>
+            ))}
         </ul>
 
         {profile?.role === 'admin' && (
