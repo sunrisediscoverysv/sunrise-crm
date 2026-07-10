@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { UnreadCount } from '@/components/UnreadCount'
 
 interface MobileNavProps {
   /** Abre el drawer lateral con el resto de secciones (Calendario, Propiedades, Configuración…). */
@@ -64,7 +65,10 @@ export function MobileNav({ onOpenMenu }: MobileNavProps) {
             ].join(' ')
           }
         >
-          {tab.icon}
+          <span className="relative">
+            {tab.icon}
+            {tab.to === '/inbox' && <UnreadCount variant="dot" />}
+          </span>
           {tab.label}
         </NavLink>
       ))}

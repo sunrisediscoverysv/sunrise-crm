@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, isToday } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Link } from 'react-router-dom'
-import { supabase } from '@/lib/supabaseClient'
 import { updateClient } from '@/lib/mutations'
 import { ChatPanel } from '@/features/whatsapp/ChatPanel'
 import { computeWhatsappWindow } from '@/features/whatsapp/whatsappWindow'
@@ -78,22 +77,8 @@ export function InboxPage() {
     })
   }, [conversations, query])
 
-  // Realtime: cualquier mensaje nuevo refresca la bandeja y el hilo afectado.
-  useEffect(() => {
-    const channel = supabase
-      .channel('inbox-messages-rt')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
-          queryClient.invalidateQueries({ queryKey: ['inbox'] })
-          const cid = (payload.new as { client_id?: string })?.client_id
-          if (cid) queryClient.invalidateQueries({ queryKey: ['messages', cid] })
-        },
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [queryClient])
+  // El realtime de la bandeja lo monta AppLayout (useInboxBadge), para que el
+  // contador se mueva también fuera de esta página.
 
   const markRead = useMutation({
     mutationFn: (clientId: string) =>
