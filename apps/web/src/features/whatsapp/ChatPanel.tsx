@@ -48,11 +48,34 @@ function waErrorText(err: unknown): string | null {
 // Quién envió un outbound: el bot o un agente desde Chatwoot (agent_name en
 // raw_payload). Los enviados desde el CRM no traen remitente y se muestran
 // sin etiqueta, como hasta ahora.
+type ChatwootPayload = { source?: string; agent_name?: string | null; bot?: boolean }
+
+function chatwootPayload(msg: Message): ChatwootPayload | null {
+  const p = msg.raw_payload as ChatwootPayload | null
+  return p && p.source === 'chatwoot' ? p : null
+}
+
+/** El outbound salió del bot y no de un agente ni del CRM. */
+function isBotMessage(msg: Message): boolean {
+  return !!chatwootPayload(msg)?.bot
+}
+
 function outboundSender(msg: Message): string | null {
-  const p = msg.raw_payload as { source?: string; agent_name?: string | null; bot?: boolean } | null
-  if (!p || p.source !== 'chatwoot') return null
-  if (p.bot) return p.agent_name ? `Bot (${p.agent_name})` : 'Bot'
-  return p.agent_name ?? null
+  const p = chatwootPayload(msg)
+  return p?.bot ? null : (p?.agent_name ?? null)
+}
+
+/** Distintivo naranja en las burbujas escritas por el bot. */
+function BotTag() {
+  return (
+    <span className="inline-flex items-center gap-1 flex-shrink-0 rounded-full bg-orange-400/25 border border-orange-300/40 text-orange-100 px-1.5 py-px text-[10px] font-sans font-medium leading-4">
+      <svg viewBox="0 0 24 24" className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+        <rect x="4" y="8" width="16" height="12" rx="3" />
+        <path strokeLinecap="round" d="M12 8V4M9 14h.01M15 14h.01" />
+      </svg>
+      Bot
+    </span>
+  )
 }
 
 function useMessages(clientId: string) {
@@ -169,6 +192,7 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
           <div className="flex flex-col gap-2">
             {messages.map(msg => {
               const isInbound = msg.direction === 'inbound'
+              const fromBot = !isInbound && isBotMessage(msg)
               return (
                 <div key={msg.id} className={`flex ${isInbound ? 'justify-start' : 'justify-end'}`}>
                   <div
@@ -177,6 +201,7 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
                       isInbound
                         ? 'bg-white border border-brand-light-gray'
                         : 'bg-brand-dark text-white',
+                      fromBot ? 'border-l-2 border-l-orange-400' : '',
                     ].join(' ')}
                   >
                     {msg.content && (
@@ -185,6 +210,7 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
                       </p>
                     )}
                     <div className={`flex items-center gap-2 mt-1 ${isInbound ? '' : 'justify-end'}`}>
+                      {fromBot && <BotTag />}
                       <span className={`text-xs font-sans ${isInbound ? 'text-brand-charcoal/40' : 'text-white/50'}`}>
                         {!isInbound && outboundSender(msg) && (
                           <>{outboundSender(msg)}{' · '}</>

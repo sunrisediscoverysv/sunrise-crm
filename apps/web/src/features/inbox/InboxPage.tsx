@@ -172,13 +172,20 @@ export function InboxPage() {
                   ? `${c.lastMessage.sender ?? 'Tú'}: ${c.lastMessage.content ?? ''}`
                   : (c.lastMessage.content ?? '—')
                 const win = computeWhatsappWindow(c.lastInboundAt)
+                // El bot tuvo la última palabra: nadie del equipo ha respondido
+                // después. Se pinta en naranja para que salte a la vista.
+                const botLast = c.lastMessage.isBot
                 return (
                   <li key={c.client.id}>
                     <button
                       onClick={() => openConversation(c)}
                       className={[
-                        'w-full text-left flex items-center gap-3 px-4 py-3 border-b border-brand-light-gray/60 transition-colors',
-                        isSel ? 'bg-brand-teal/10' : 'hover:bg-brand-light-gray/40',
+                        'w-full text-left flex items-center gap-3 px-4 py-3 border-b border-l-2 border-b-brand-light-gray/60 transition-colors',
+                        isSel
+                          ? 'bg-brand-teal/10 border-l-brand-teal'
+                          : botLast
+                            ? 'bg-orange-50 border-l-orange-400 hover:bg-orange-100/60'
+                            : 'border-l-transparent hover:bg-brand-light-gray/40',
                       ].join(' ')}
                     >
                       <div className="relative flex-shrink-0">

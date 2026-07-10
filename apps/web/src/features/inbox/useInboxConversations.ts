@@ -17,6 +17,8 @@ export interface Conversation {
     created_at: string
     /** Remitente de un outbound vía Chatwoot: nombre del agente, o "Bot". */
     sender: string | null
+    /** El outbound lo escribió el bot, no un agente ni el CRM. */
+    isBot: boolean
   }
   lastInboundAt: string | null
   unread: boolean
@@ -59,11 +61,12 @@ export function useInboxConversations() {
       for (const m of msgs) {
         const existing = byClient.get(m.client_id)
         if (!existing) {
+          const isBot = m.direction === 'outbound' && m.bot === 'true'
           const sender = m.direction === 'outbound'
-            ? (m.bot === 'true' ? 'Bot' : m.agent)
+            ? (isBot ? 'Bot' : m.agent)
             : null
           byClient.set(m.client_id, {
-            lastMessage: { content: m.content, direction: m.direction, created_at: m.created_at, sender },
+            lastMessage: { content: m.content, direction: m.direction, created_at: m.created_at, sender, isBot },
             lastInboundAt: m.direction === 'inbound' ? m.created_at : null,
           })
         } else if (!existing.lastInboundAt && m.direction === 'inbound') {
