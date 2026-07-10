@@ -4,6 +4,7 @@ import { Button } from '@/components/Button'
 import { GlobalSearch } from '@/components/GlobalSearch'
 import { InstallButton } from '@/components/InstallButton'
 import { NotificationsButton } from '@/components/NotificationsButton'
+import { UnreadCount } from '@/components/UnreadCount'
 
 interface SidebarProps {
   isOpen: boolean
@@ -117,6 +118,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     >
       {icon}
       {label}
+      {to === '/inbox' && <UnreadCount />}
     </NavLink>
   )
 

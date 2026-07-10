@@ -3,9 +3,14 @@ import type { ReactNode } from 'react'
 import { Sidebar } from './Sidebar'
 import { MobileNav } from './MobileNav'
 import { InstallPrompt } from '@/components/InstallPrompt'
+import { useInboxBadge } from '@/features/inbox/useInboxBadge'
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Realtime de la bandeja + conteo en el ícono de la app. Va aquí, en el layout
+  // autenticado, para que el badge siga vivo fuera de /inbox.
+  useInboxBadge()
 
   return (
     <div className="flex h-screen bg-[#f7f8f9] overflow-hidden">
