@@ -7,6 +7,28 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Tipos de mensaje multimedia de la Cloud API. Lo que no sea imagen/video/audio
+// soportado se manda como documento (PDF, Word, Excel, webp, etc.).
+// Mantener en sincronía con apps/web/src/features/whatsapp/whatsappMedia.ts.
+type MediaKind = 'image' | 'video' | 'audio' | 'document'
+
+const MB = 1024 * 1024
+const WHATSAPP_MEDIA_LIMITS: Record<MediaKind, number> = {
+  image: 5 * MB, video: 16 * MB, audio: 16 * MB, document: 25 * MB,
+}
+
+const MEDIA_LABEL: Record<MediaKind, string> = {
+  image: '[Imagen]', video: '[Video]', audio: '[Audio]', document: '[Documento]',
+}
+
+function whatsappMediaKind(mime: string): MediaKind {
+  const m = mime.toLowerCase().split(';')[0].trim()
+  if (m === 'image/jpeg' || m === 'image/png') return 'image'
+  if (m === 'video/mp4' || m === 'video/3gpp') return 'video'
+  if (['audio/aac', 'audio/amr', 'audio/mpeg', 'audio/mp4', 'audio/ogg'].includes(m)) return 'audio'
+  return 'document'
+}
+
 function json(obj: unknown, status = 200): Response {
   return new Response(JSON.stringify(obj), {
     status,
@@ -198,6 +220,113 @@ Deno.serve(async (req: Request) => {
       })
       await admin.from('clients').update({ last_contact_at: new Date().toISOString() }).eq('id', clientId)
     }
+
+    return json({ status: 'ok', wa_message_id: data?.messages?.[0]?.id ?? null })
+  }
+
+  // ── Enviar multimedia: imagen, video, audio o documento (ventana de 24h) ────
+  // El CRM ya subió el archivo al bucket privado `client-attachments` bajo
+  // `{client_id}/chat/…`. Aquí lo descargamos, lo subimos a Meta (/media) y lo
+  // enviamos por id: así un archivo inválido falla al momento, en vez de
+  // quedar como fallo asíncrono en un webhook de estados que no recibimos.
+  if (action === 'media') {
+    const clientId = body.client_id as string | undefined
+    const to = body.to as string | undefined
+    const storagePath = body.storage_path as string | undefined
+    const caption = (body.caption as string | undefined)?.trim() || ''
+
+    if (!clientId || !to || !storagePath) {
+      return json({ error: 'Faltan datos requeridos: client_id, to, storage_path.' }, 400)
+    }
+    if (!storagePath.startsWith(`${clientId}/chat/`) || storagePath.includes('..')) {
+      return json({ error: 'Ruta de archivo no válida.' }, 400)
+    }
+
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } },
+    )
+
+    const { data: blob, error: dlErr } = await admin.storage.from('client-attachments').download(storagePath)
+    if (dlErr || !blob) return json({ error: 'No se encontró el archivo subido.' }, 404)
+
+    const fileName = (body.file_name as string | undefined) || storagePath.split('/').pop() || 'archivo'
+    const mime = (body.mime_type as string | undefined) || blob.type || 'application/octet-stream'
+    const kind = whatsappMediaKind(mime)
+    const limit = WHATSAPP_MEDIA_LIMITS[kind]
+    if (blob.size > limit) {
+      return json({ error: `El archivo supera el máximo de ${limit / MB} MB que permite WhatsApp para este tipo.` }, 413)
+    }
+
+    // 1) Subir el binario a Meta → media id
+    const form = new FormData()
+    form.append('messaging_product', 'whatsapp')
+    form.append('type', mime)
+    form.append('file', new File([blob], fileName, { type: mime }))
+    const upRes = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/media`,
+      { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form },
+    )
+    const upData = await upRes.json()
+    if (!upRes.ok || !upData?.id) {
+      return json({ error: upData?.error?.message ?? 'Meta rechazó el archivo.', meta: upData?.error }, 502)
+    }
+
+    // 2) Enviar el mensaje. El audio no admite caption; el documento lleva nombre.
+    const mediaObj: Record<string, unknown> = { id: upData.id }
+    if (caption && kind !== 'audio') mediaObj.caption = caption
+    if (kind === 'document') mediaObj.filename = fileName
+
+    const res = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: String(to).replace(/[^\d]/g, ''),
+          type: kind,
+          [kind]: mediaObj,
+        }),
+      },
+    )
+    const data = await res.json()
+    if (!res.ok) {
+      if (data?.error?.code === 131047) {
+        return json({
+          error: 'Pasaron más de 24h desde el último mensaje del cliente. Envía una plantilla para reabrir la conversación.',
+          code: 'window_closed',
+        }, 409)
+      }
+      return json({ error: data?.error?.message ?? 'Error al enviar el archivo', meta: data?.error }, 502)
+    }
+
+    // 3) Registrar en el historial. `content` es el texto que ven las
+    //    vistas previas (bandeja); el hilo pinta el archivo desde raw_payload.media.
+    const sendCaption = kind !== 'audio' ? caption : ''
+    await admin.from('messages').insert({
+      client_id: clientId,
+      channel: 'whatsapp',
+      direction: 'outbound',
+      content: sendCaption ? `${MEDIA_LABEL[kind]} ${sendCaption}` : MEDIA_LABEL[kind],
+      wa_message_id: data?.messages?.[0]?.id ?? null,
+      wa_status: 'accepted',
+      raw_payload: {
+        type: 'media',
+        caption: sendCaption || null,
+        media: {
+          kind,
+          storage_path: storagePath,
+          file_name: fileName,
+          mime_type: mime,
+          size: blob.size,
+          wa_media_id: upData.id,
+        },
+        wa_response: data,
+      },
+    })
+    await admin.from('clients').update({ last_contact_at: new Date().toISOString() }).eq('id', clientId)
 
     return json({ status: 'ok', wa_message_id: data?.messages?.[0]?.id ?? null })
   }
