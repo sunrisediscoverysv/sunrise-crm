@@ -55,6 +55,53 @@ function outboundSender(msg: Message): string | null {
   return p.agent_name ?? null
 }
 
+// Botón para copiar el texto de un mensaje completo (p. ej. una ficha de
+// propiedad) sin tener que seleccionarlo a mano. En escritorio aparece al pasar
+// el mouse por el mensaje; en pantallas táctiles queda siempre visible.
+function CopyMessageButton({ text, onDark }: { text: string; onDark: boolean }) {
+  const [copied, setCopied] = useState(false)
+  useEffect(() => {
+    if (!copied) return
+    const t = setTimeout(() => setCopied(false), 1500)
+    return () => clearTimeout(t)
+  }, [copied])
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+    } catch {
+      // Sin permiso de portapapeles (http, navegador viejo): no hay nada útil que mostrar
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      aria-label={copied ? 'Copiado' : 'Copiar mensaje'}
+      title={copied ? 'Copiado' : 'Copiar mensaje'}
+      className={[
+        'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-sans transition-opacity',
+        'opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100',
+        onDark ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-brand-charcoal/45 hover:text-brand-dark hover:bg-brand-light-gray',
+        copied ? '!opacity-100' : '',
+      ].join(' ')}
+    >
+      {copied ? (
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+      ) : (
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25" />
+        </svg>
+      )}
+      {copied ? 'Copiado' : 'Copiar'}
+    </button>
+  )
+}
+
 function useMessages(clientId: string) {
   return useQuery({
     queryKey: ['messages', clientId],
@@ -169,11 +216,13 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
           <div className="flex flex-col gap-2">
             {messages.map(msg => {
               const isInbound = msg.direction === 'inbound'
+              // "[Adjunto]" es solo la etiqueta de un archivo: no tiene sentido copiarla
+              const copyText = msg.content && msg.content !== '[Adjunto]' ? msg.content : null
               return (
                 <div key={msg.id} className={`flex ${isInbound ? 'justify-start' : 'justify-end'}`}>
                   <div
                     className={[
-                      'max-w-[80%] rounded-card px-3.5 py-2.5',
+                      'group max-w-[80%] rounded-card px-3.5 py-2.5',
                       isInbound
                         ? 'bg-white border border-brand-light-gray'
                         : 'bg-brand-dark text-white',
@@ -185,6 +234,7 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
                       </p>
                     )}
                     <div className={`flex items-center gap-2 mt-1 ${isInbound ? '' : 'justify-end'}`}>
+                      {!isInbound && copyText && <CopyMessageButton text={copyText} onDark />}
                       <span className={`text-xs font-sans ${isInbound ? 'text-brand-charcoal/40' : 'text-white/50'}`}>
                         {!isInbound && outboundSender(msg) && (
                           <>{outboundSender(msg)}{' · '}</>
@@ -211,6 +261,7 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
                           </>
                         )}
                       </span>
+                      {isInbound && copyText && <CopyMessageButton text={copyText} onDark={false} />}
                     </div>
                     {!isInbound && msg.wa_status === 'failed' && waErrorText(msg.wa_error) && (
                       <p className="text-[11px] font-sans text-red-200 mt-1 leading-snug">
@@ -235,6 +286,10 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
           <p className="text-xs text-brand-charcoal/45 font-sans text-center py-2">
             Sin número de WhatsApp registrado.
           </p>
+        ) : isLoading ? (
+          // Mientras carga el hilo aún no se sabe si la ventana de 24h está
+          // abierta: sin esto se veía un momento el aviso de "envía una plantilla".
+          <div className="h-11" aria-hidden="true" />
         ) : win.open ? (
           <>
             <div className="flex items-end gap-2">
