@@ -93,5 +93,13 @@ verify_jwt = false
 [functions.chatwoot-send]
 verify_jwt = false
 
+# Llamada desde el hilo del CRM; valida el JWT del usuario dentro de la función.
+[functions.chatwoot-attachments]
+verify_jwt = false
+
+# Consultado por Botpress; se autentica con BOTPRESS_WEBHOOK_SECRET, no con JWT.
+[functions.chatwoot-status]
+verify_jwt = false
+
 [analytics]
 enabled = false

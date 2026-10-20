@@ -6,22 +6,27 @@ import { CHAT_MEDIA_BUCKET, formatFileSize, type ChatMedia } from './whatsappMed
 // cacheada por React Query un poco menos para no servir una ya vencida.
 const SIGNED_URL_TTL_S = 60 * 60
 
-function useSignedUrl(path: string) {
+function useSignedUrl(path: string | undefined) {
   return useQuery({
     queryKey: ['chat-media-url', path],
     queryFn: async () => {
       const { data, error } = await supabase.storage
         .from(CHAT_MEDIA_BUCKET)
-        .createSignedUrl(path, SIGNED_URL_TTL_S)
+        .createSignedUrl(path!, SIGNED_URL_TTL_S)
       if (error) throw error
       return data.signedUrl
     },
+    enabled: !!path,
     staleTime: (SIGNED_URL_TTL_S - 5 * 60) * 1000,
   })
 }
 
 export function ChatMediaPreview({ media, onDark }: { media: ChatMedia; onDark: boolean }) {
-  const { data: url, isLoading, isError } = useSignedUrl(media.storage_path)
+  // Los adjuntos de Chatwoot ya traen su enlace; los del bucket se firman
+  const signed = useSignedUrl(media.url ? undefined : media.storage_path)
+  const url = media.url ?? signed.data
+  const isLoading = !media.url && signed.isLoading
+  const isError = !media.url && signed.isError
 
   if (isLoading) {
     return <div className="w-56 h-32 rounded-card bg-white/10 animate-pulse" />

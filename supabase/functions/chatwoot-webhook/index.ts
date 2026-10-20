@@ -1,4 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  getContactSourceId,
+  getConversation,
+  normalizeChatwootAttachments,
+  stateFromWebhook,
+  upsertConversationState,
+} from '../_shared/chatwoot.ts'
 
 // Recibe webhooks de Chatwoot (evento message_created) y refleja en el CRM
 // la conversación completa mientras dure la transición:
@@ -142,6 +149,83 @@ Deno.serve(async (req: Request) => {
     return json({ status: 'ignored', reason })
   }
 
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    { auth: { persistSession: false } },
+  )
+
+  // --- Espejo del estado de la conversación (puente CRM → Botpress) ---------
+  // Corre para TODOS los eventos, incluidos los conversation_* que los filtros
+  // de mensaje descartan más abajo: son justo los que traen los cambios de
+  // agente y de status. Va envuelto en try/catch porque este espejo nunca debe
+  // tumbar el reflejo de mensajes, que es la función original del webhook.
+  try {
+    const parsed = stateFromWebhook(payload)
+    if (parsed) {
+      // Traza de diagnóstico del espejo: qué entendió el sync de este evento.
+      console.log('[chatwoot-sync]', JSON.stringify({
+        event: payload.event ?? null,
+        conv: parsed.state.chatwoot_conversation_id,
+        status: parsed.state.status,
+        assigneeKnown: parsed.assigneeKnown,
+        assignee_id: parsed.state.assignee_id,
+        is_assigned: parsed.state.is_assigned,
+      }))
+      const convId = parsed.state.chatwoot_conversation_id
+      const { data: known } = await supabase
+        .from('chatwoot_conversations')
+        .select('source_id, is_assigned')
+        .eq('chatwoot_conversation_id', convId)
+        .maybeSingle()
+
+      await upsertConversationState(supabase, parsed.state, { assigneeKnown: parsed.assigneeKnown })
+
+      // Enriquecimiento desde la API, solo cuando hace falta:
+      //  * source_id (el id de Meta que ve Botpress) no viene en el webhook.
+      //  * si el evento no reporta assignee y aún no conocemos la conversación,
+      //    preguntamos en vez de asumir que está sin agente.
+      const row = known as { source_id: string | null; is_assigned: boolean } | null
+      const needsSourceId = parsed.state.channel !== 'whatsapp' &&
+        !row?.source_id && parsed.state.chatwoot_contact_id != null
+      const needsAssignee = !parsed.assigneeKnown && !row
+
+      if (needsSourceId || needsAssignee) {
+        const enrich = (async () => {
+          const patch = { ...parsed.state }
+          let assigneeKnown = parsed.assigneeKnown
+
+          if (needsSourceId) {
+            patch.source_id = await getContactSourceId(
+              parsed.state.chatwoot_contact_id!,
+              parsed.state.chatwoot_inbox_id,
+            )
+          }
+          if (needsAssignee) {
+            const fresh = await getConversation(convId)
+            const freshState = fresh ? stateFromWebhook(fresh) : null
+            if (freshState?.assigneeKnown) {
+              patch.assignee_id = freshState.state.assignee_id
+              patch.assignee_name = freshState.state.assignee_name
+              patch.is_assigned = freshState.state.is_assigned
+              patch.status = freshState.state.status ?? patch.status
+              assigneeKnown = true
+            }
+          }
+          await upsertConversationState(supabase, patch, { assigneeKnown })
+        })()
+
+        // En segundo plano: no sumar la latencia de la API de Chatwoot a la
+        // respuesta del webhook (Chatwoot reintenta si tardamos demasiado).
+        const edge = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime
+        if (edge) edge.waitUntil(enrich)
+        else await enrich
+      }
+    }
+  } catch (err) {
+    console.error('[chatwoot-webhook] sincronización de conversación falló:', err)
+  }
+
   // Se reflejan dos casos; el resto se ignora (notas privadas, mensajes del
   // bot/agent_bot, eventos que no son message_created):
   // - outgoing de agente humano (sender.type 'user') → outbound.
@@ -206,12 +290,6 @@ Deno.serve(async (req: Request) => {
   const content = (payload.content?.trim() || (hasAttachments ? '[Adjunto]' : ''))
     .slice(0, CONTENT_MAX_LENGTH)
   if (!content) return ignored('empty_content')
-
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    { auth: { persistSession: false } },
-  )
 
   // Buscar el cliente por (canal, channel_user_id). Para WhatsApp hay un
   // respaldo por teléfono (contactos antiguos guardados con formato +503...).
@@ -278,6 +356,17 @@ Deno.serve(async (req: Request) => {
     return ignored('client_not_found')
   }
 
+  // Enlazar la conversación espejada con el contacto del CRM, ahora que se
+  // conoce. Best-effort: no debe impedir que se guarde el mensaje.
+  const convIdForLink = payload.conversation?.id
+  if (convIdForLink != null) {
+    await supabase
+      .from('chatwoot_conversations')
+      .update({ client_id: clientId })
+      .eq('chatwoot_conversation_id', convIdForLink)
+      .is('client_id', null)
+  }
+
   // Idempotencia: Chatwoot reintenta webhooks fallidos; no duplicar el mensaje.
   if (payload.id != null) {
     const { data: dupe } = await supabase
@@ -320,6 +409,8 @@ Deno.serve(async (req: Request) => {
       chatwoot_conversation_id: payload.conversation?.id ?? null,
       agent_name: payload.sender?.name ?? null,
       ...(isBot ? { bot: true } : {}),
+      // Enlaces a los archivos para verlos en el hilo del CRM (no solo "[Adjunto]")
+      ...(hasAttachments ? { attachments: normalizeChatwootAttachments(payload.attachments) } : {}),
     },
   })
   if (insertError) {

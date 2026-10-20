@@ -17,8 +17,10 @@ import {
   MEDIA_KIND_LABEL,
   WHATSAPP_MEDIA_ACCEPT,
   chatMediaPath,
+  chatwootMedia,
   formatFileSize,
   messageMedia,
+  needsChatwootAttachments,
   validateWhatsappMedia,
   whatsappMediaKind,
 } from './whatsappMedia'
@@ -132,6 +134,26 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
     if (el) el.scrollTop = el.scrollHeight
   }, [messages.length])
 
+  // Adjuntos de Chatwoot guardados antes de que el webhook guardara el enlace:
+  // al abrir el chat se piden una vez a Chatwoot y se refresca el hilo.
+  const missingAttachments = messages.some(m => needsChatwootAttachments(m.content, m.raw_payload))
+  useQuery({
+    queryKey: ['chatwoot-attachments', client.id],
+    enabled: missingAttachments,
+    staleTime: Infinity,
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('chatwoot-attachments', {
+        body: { client_id: client.id },
+      })
+      if (error) throw error
+      if (data?.updated || data?.missing) {
+        queryClient.invalidateQueries({ queryKey: ['messages', client.id] })
+      }
+      return data as { updated: number; missing: number }
+    },
+  })
+
   const send = useMutation({
     mutationFn: async ({ text, attachment }: { text: string; attachment: File | null }) => {
       if (isWhatsapp && attachment) {
@@ -221,9 +243,12 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
             {messages.map(msg => {
               const isInbound = msg.direction === 'inbound'
               const attached = messageMedia(msg.raw_payload)
+              const cwFiles = chatwootMedia(msg.raw_payload)
               // Con adjunto, `content` es solo la etiqueta para la bandeja
               // ("[Imagen] …"); en el hilo se pinta el archivo + su caption.
-              const bodyText = attached ? attached.caption : msg.content
+              const bodyText = attached
+                ? attached.caption
+                : cwFiles.length > 0 && msg.content === '[Adjunto]' ? null : msg.content
               return (
                 <div key={msg.id} className={`flex ${isInbound ? 'justify-start' : 'justify-end'}`}>
                   <div
@@ -237,6 +262,13 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
                     {attached && (
                       <div className={bodyText ? 'mb-1.5' : ''}>
                         <ChatMediaPreview media={attached.media} onDark={!isInbound} />
+                      </div>
+                    )}
+                    {cwFiles.length > 0 && (
+                      <div className={`flex flex-col gap-1.5 ${bodyText ? 'mb-1.5' : ''}`}>
+                        {cwFiles.map(f => (
+                          <ChatMediaPreview key={f.url} media={f} onDark={!isInbound} />
+                        ))}
                       </div>
                     )}
                     {bodyText && (
