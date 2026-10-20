@@ -1,6 +1,10 @@
-// Envía un mensaje saliente a una conversación de Chatwoot (Instagram, Messenger,
-// etc.). El CRM llama a esta función; Chatwoot lo entrega por el canal conectado.
+// Envía un mensaje saliente a una conversación de Chatwoot (WhatsApp, Instagram,
+// Messenger). El CRM llama a esta función; Chatwoot lo entrega por el canal
+// conectado, así el mensaje queda también en Chatwoot para los agentes.
 //   POST { client_id, text }  (con JWT de un agente autenticado)
+// Errores: { error: <mensaje legible>, code } con code = no_conversation (409:
+// el cliente nunca pasó por Chatwoot; el CRM puede enviar directo a Meta) o
+// chatwoot_error (502).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const CORS = {
@@ -51,7 +55,9 @@ Deno.serve(async (req: Request) => {
 
   const convId = (lastMsg as { raw_payload?: { chatwoot_conversation_id?: number | string } } | null)
     ?.raw_payload?.chatwoot_conversation_id
-  if (!convId) return json({ error: 'no_conversation' }, 409)
+  if (!convId) {
+    return json({ error: 'Este cliente no tiene conversación en Chatwoot.', code: 'no_conversation' }, 409)
+  }
 
   // Canal del cliente (para etiquetar el mensaje guardado).
   const { data: clientRow } = await admin.from('clients').select('channel').eq('id', clientId).single()
@@ -65,24 +71,43 @@ Deno.serve(async (req: Request) => {
   })
   if (!res.ok) {
     const detail = await res.text()
-    return json({ error: 'chatwoot_error', detail: detail.slice(0, 500) }, 502)
+    console.error('[chatwoot-send] Chatwoot rechazó el mensaje:', res.status, detail.slice(0, 500))
+    return json({ error: 'Chatwoot no pudo enviar el mensaje. Intenta de nuevo.', code: 'chatwoot_error', detail: detail.slice(0, 500) }, 502)
   }
   const sent = await res.json()
 
   // Reflejar el saliente en el CRM. El chatwoot_message_id evita que el webhook
-  // de eco (Chatwoot reenvía este mismo mensaje) lo duplique.
-  await admin.from('messages').insert({
-    client_id: clientId,
-    channel,
-    direction: 'outbound',
-    content: text,
-    raw_payload: {
-      source: 'chatwoot',
-      chatwoot_message_id: sent?.id ?? null,
-      chatwoot_conversation_id: convId,
-      agent_name: userData.user.user_metadata?.full_name ?? null,
-    },
-  })
+  // de eco (Chatwoot reenvía este mismo mensaje) lo duplique. Si el eco llegó
+  // antes que esta respuesta, la fila ya existe: solo se le pone el nombre del
+  // agente del CRM en vez de insertar otra.
+  const agentName = userData.user.user_metadata?.full_name ?? userData.user.email ?? null
+  const rawPayload = {
+    source: 'chatwoot',
+    chatwoot_message_id: sent?.id ?? null,
+    chatwoot_conversation_id: convId,
+    agent_name: agentName,
+    from_crm: true,
+  }
+  const { data: echoed } = sent?.id != null
+    ? await admin
+      .from('messages')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('raw_payload->>chatwoot_message_id', String(sent.id))
+      .limit(1)
+      .maybeSingle()
+    : { data: null }
+  if (echoed) {
+    await admin.from('messages').update({ raw_payload: rawPayload }).eq('id', echoed.id)
+  } else {
+    await admin.from('messages').insert({
+      client_id: clientId,
+      channel,
+      direction: 'outbound',
+      content: text,
+      raw_payload: rawPayload,
+    })
+  }
   await admin.from('clients').update({ last_contact_at: new Date().toISOString() }).eq('id', clientId)
 
   return json({ ok: true, chatwoot_message_id: sent?.id ?? null })

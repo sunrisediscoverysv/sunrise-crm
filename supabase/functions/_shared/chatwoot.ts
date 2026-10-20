@@ -277,3 +277,20 @@ export async function upsertConversationState(
     .upsert(row, { onConflict: 'chatwoot_conversation_id' })
   if (error) console.error('[chatwoot-sync] upsert falló:', error)
 }
+
+// Estados de entrega de WhatsApp que Chatwoot reporta en `message_updated`.
+// Mismo orden que whatsapp-webhook: un "sent" tardío no pisa un "delivered".
+const WA_STATUS_RANK: Record<string, number> = { accepted: 0, sent: 1, delivered: 2, read: 3, failed: 4 }
+
+/**
+ * Estado de entrega a guardar en `messages.wa_status`, o null si no hay que
+ * tocar la fila. Nunca retrocede; `failed` gana siempre porque el agente
+ * necesita enterarse. Estados desconocidos (p. ej. "progress") se ignoran.
+ */
+export function nextWaStatus(current: string | null | undefined, incoming: string | null | undefined): string | null {
+  if (!incoming || !(incoming in WA_STATUS_RANK)) return null
+  if (incoming === current) return null
+  if (incoming === 'failed') return 'failed'
+  const currentRank = WA_STATUS_RANK[current ?? 'accepted'] ?? 0
+  return WA_STATUS_RANK[incoming] > currentRank ? incoming : null
+}
