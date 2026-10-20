@@ -16,7 +16,7 @@ const queryClient = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <QueryClientProvider client={queryClient}>
         <App />
       </QueryClientProvider>
@@ -24,8 +24,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 )
 
-// PWA: registrar el service worker
-if ('serviceWorker' in navigator) {
+// PWA: registrar el service worker. Solo en la raíz del dominio: sw.js cachea
+// rutas absolutas ('/', '/index.html'), así que en un build con base en
+// subcarpeta (p. ej. /sunrisecrm/) se omite y la app funciona sin PWA ni push.
+if ('serviceWorker' in navigator && import.meta.env.BASE_URL === '/') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => { /* sin SW, la app funciona igual */ })
   })

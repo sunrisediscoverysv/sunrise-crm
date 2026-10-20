@@ -11,6 +11,17 @@ import {
   formatWindowRemaining,
   lastInboundAt,
 } from './whatsappWindow'
+import { ChatMediaPreview } from './ChatMediaPreview'
+import {
+  CHAT_MEDIA_BUCKET,
+  MEDIA_KIND_LABEL,
+  WHATSAPP_MEDIA_ACCEPT,
+  chatMediaPath,
+  formatFileSize,
+  messageMedia,
+  validateWhatsappMedia,
+  whatsappMediaKind,
+} from './whatsappMedia'
 
 export interface ChatClient {
   id: string
@@ -75,7 +86,10 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
   const { data: messages = [], isLoading } = useMessages(client.id)
   const [draft, setDraft] = useState('')
   const [templateOpen, setTemplateOpen] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
+  const [fileError, setFileError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isWhatsapp = client.channel === 'whatsapp'
   // Instagram y Messenger se responden a través de la API de Chatwoot.
@@ -119,8 +133,29 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
   }, [messages.length])
 
   const send = useMutation({
-    mutationFn: async (text: string) => {
-      if (isWhatsapp) {
+    mutationFn: async ({ text, attachment }: { text: string; attachment: File | null }) => {
+      if (isWhatsapp && attachment) {
+        if (!client.phone) throw new Error('Este cliente no tiene número de WhatsApp.')
+        // El navegador sube el archivo al bucket privado; la Edge Function lo
+        // toma de ahí, lo sube a Meta y lo registra en el historial.
+        const path = chatMediaPath(client.id, attachment.name)
+        const { error: upErr } = await supabase.storage
+          .from(CHAT_MEDIA_BUCKET)
+          .upload(path, attachment, { contentType: attachment.type || undefined })
+        if (upErr) throw new Error(`No se pudo subir el archivo: ${upErr.message}`)
+        const { error } = await supabase.functions.invoke('whatsapp', {
+          body: {
+            action: 'media',
+            client_id: client.id,
+            to: client.phone,
+            storage_path: path,
+            file_name: attachment.name,
+            mime_type: attachment.type || 'application/octet-stream',
+            caption: text,
+          },
+        })
+        if (error) throw new Error(await functionsErrorMessage(error, 'No se pudo enviar el archivo.'))
+      } else if (isWhatsapp) {
         if (!client.phone) throw new Error('Este cliente no tiene número de WhatsApp.')
         const { error } = await supabase.functions.invoke('whatsapp', {
           body: { action: 'text', client_id: client.id, to: client.phone, text },
@@ -137,6 +172,7 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
     },
     onSuccess: () => {
       setDraft('')
+      setFile(null)
       queryClient.invalidateQueries({ queryKey: ['messages', client.id] })
       queryClient.invalidateQueries({ queryKey: ['client', client.id] })
       queryClient.invalidateQueries({ queryKey: ['inbox'] })
@@ -147,9 +183,24 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
 
   function submit() {
     const text = draft.trim()
-    if (!text || composerDisabled) return
-    send.mutate(text)
+    if ((!text && !file) || composerDisabled) return
+    send.mutate({ text, attachment: file })
   }
+
+  function pickFile(picked: File | null | undefined) {
+    if (!picked) return
+    const problem = validateWhatsappMedia(picked)
+    setFileError(problem)
+    setFile(problem ? null : picked)
+    send.reset()
+  }
+
+  const fileKind = file ? whatsappMediaKind(file.type) : null
+  const filePreviewUrl = useMemo(
+    () => (file && fileKind === 'image' ? URL.createObjectURL(file) : null),
+    [file, fileKind],
+  )
+  useEffect(() => () => { if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl) }, [filePreviewUrl])
 
   return (
     <div className={`flex flex-col min-h-0 ${className ?? ''}`}>
@@ -169,6 +220,10 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
           <div className="flex flex-col gap-2">
             {messages.map(msg => {
               const isInbound = msg.direction === 'inbound'
+              const attached = messageMedia(msg.raw_payload)
+              // Con adjunto, `content` es solo la etiqueta para la bandeja
+              // ("[Imagen] …"); en el hilo se pinta el archivo + su caption.
+              const bodyText = attached ? attached.caption : msg.content
               return (
                 <div key={msg.id} className={`flex ${isInbound ? 'justify-start' : 'justify-end'}`}>
                   <div
@@ -179,9 +234,14 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
                         : 'bg-brand-dark text-white',
                     ].join(' ')}
                   >
-                    {msg.content && (
+                    {attached && (
+                      <div className={bodyText ? 'mb-1.5' : ''}>
+                        <ChatMediaPreview media={attached.media} onDark={!isInbound} />
+                      </div>
+                    )}
+                    {bodyText && (
                       <p className={`text-sm font-serif leading-relaxed whitespace-pre-wrap break-words ${isInbound ? 'text-brand-charcoal' : 'text-white'}`}>
-                        {msg.content}
+                        {bodyText}
                       </p>
                     )}
                     <div className={`flex items-center gap-2 mt-1 ${isInbound ? '' : 'justify-end'}`}>
@@ -237,20 +297,78 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
           </p>
         ) : win.open ? (
           <>
+            {isWhatsapp && file && fileKind && (
+              <div className="flex items-center gap-3 mb-2 px-3 py-2 bg-brand-light-gray/50 border border-brand-light-gray rounded-card">
+                {filePreviewUrl ? (
+                  <img src={filePreviewUrl} alt="" className="w-12 h-12 object-cover rounded-md shrink-0" />
+                ) : (
+                  <span className="w-12 h-12 flex items-center justify-center rounded-md bg-white text-brand-teal shrink-0">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-sans font-medium text-brand-dark truncate">{file.name}</p>
+                  <p className="text-xs font-sans text-brand-charcoal/50">
+                    {MEDIA_KIND_LABEL[fileKind]} · {formatFileSize(file.size)}
+                    {fileKind === 'audio' && ' · WhatsApp no admite texto junto al audio'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setFile(null)}
+                  disabled={send.isPending}
+                  aria-label="Quitar archivo"
+                  className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-brand-charcoal/50 hover:bg-white hover:text-brand-dark transition-colors disabled:opacity-40"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
             <div className="flex items-end gap-2">
+              {isWhatsapp && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={WHATSAPP_MEDIA_ACCEPT}
+                    className="hidden"
+                    onChange={e => { pickFile(e.target.files?.[0]); e.target.value = '' }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={composerDisabled}
+                    aria-label="Adjuntar archivo"
+                    title="Adjuntar imagen, video, audio o documento"
+                    className="shrink-0 w-11 h-11 flex items-center justify-center text-brand-charcoal/60 border border-brand-light-gray rounded-card hover:text-brand-teal hover:border-brand-teal transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                    </svg>
+                  </button>
+                </>
+              )}
               <textarea
                 value={draft}
                 onChange={e => setDraft(e.target.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() }
                 }}
+                onPaste={e => {
+                  // Pegar una captura/imagen la adjunta directamente.
+                  const pasted = isWhatsapp ? e.clipboardData.files?.[0] : undefined
+                  if (pasted) { e.preventDefault(); pickFile(pasted) }
+                }}
                 rows={1}
-                placeholder="Escribe un mensaje…"
+                disabled={isWhatsapp && fileKind === 'audio'}
+                placeholder={file ? 'Añade un comentario (opcional)…' : 'Escribe un mensaje…'}
                 className="flex-1 resize-none max-h-32 text-sm font-sans text-brand-dark bg-white border border-brand-light-gray rounded-card px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal transition-colors placeholder:text-brand-charcoal/30"
               />
               <button
                 onClick={submit}
-                disabled={composerDisabled || !draft.trim()}
+                disabled={composerDisabled || (!draft.trim() && !file)}
                 aria-label="Enviar"
                 className="shrink-0 w-11 h-11 flex items-center justify-center bg-brand-teal text-white rounded-card hover:bg-brand-deep transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -270,8 +388,10 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
               <span className="text-[11px] font-sans text-brand-charcoal/40">
                 Ventana de 24h abierta · quedan {formatWindowRemaining(win.msRemaining)}
               </span>
-              {send.isError && (
-                <span className="text-[11px] font-sans text-red-500">{(send.error as Error).message}</span>
+              {(send.isError || fileError) && (
+                <span className="text-[11px] font-sans text-red-500">
+                  {fileError ?? (send.error as Error).message}
+                </span>
               )}
             </div>
           </>

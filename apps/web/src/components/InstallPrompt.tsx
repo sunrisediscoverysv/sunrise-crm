@@ -63,7 +63,7 @@ export function InstallPrompt() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4 pointer-events-none">
       <div className="pointer-events-auto max-w-md mx-auto bg-white rounded-card shadow-card-hover ring-1 ring-black/5 p-4 flex items-start gap-3 animate-[slideUp_0.3s_ease-out]">
-        <img src="/icon-192.png" alt="" className="w-12 h-12 rounded-xl flex-shrink-0 shadow-sm" />
+        <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" className="w-12 h-12 rounded-xl flex-shrink-0 shadow-sm" />
         <div className="flex-1 min-w-0">
           <p className="font-display text-base text-brand-dark leading-tight">Instalá Sunrise CRM</p>
           {mode === 'chromium' ? (
