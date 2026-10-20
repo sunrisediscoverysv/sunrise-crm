@@ -230,9 +230,11 @@ export async function deleteStage(id: string): Promise<void> {
 export async function reorderStages(
   stages: { id: string; position: number }[],
 ): Promise<void> {
-  await Promise.all(
+  const results = await Promise.all(
     stages.map(({ id, position }) =>
       raw.from('pipeline_stages').update({ position }).eq('id', id),
     ),
   )
+  const failed = results.find((r: { error: { message: string } | null }) => r.error)
+  if (failed) throw new Error(failed.error.message)
 }
