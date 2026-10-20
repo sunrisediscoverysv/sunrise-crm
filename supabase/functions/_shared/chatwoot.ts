@@ -277,3 +277,60 @@ export async function upsertConversationState(
     .upsert(row, { onConflict: 'chatwoot_conversation_id' })
   if (error) console.error('[chatwoot-sync] upsert falló:', error)
 }
+
+/**
+ * Una página de mensajes de la conversación (Chatwoot devuelve ~20, del más
+ * viejo al más nuevo). Con `before` trae los anteriores a ese id.
+ */
+export async function getConversationMessages(
+  convId: number | string,
+  before?: number,
+): Promise<Array<{ id?: number; attachments?: unknown }>> {
+  const data = await chatwootGet(`/conversations/${convId}/messages${before ? `?before=${before}` : ''}`)
+  const payload = (data as { payload?: unknown } | null)?.payload
+  return Array.isArray(payload) ? payload : []
+}
+
+export type AttachmentKind = 'image' | 'video' | 'audio' | 'document'
+
+/** Adjunto de Chatwoot tal como lo guarda el CRM en raw_payload.attachments. */
+export interface ChatwootAttachment {
+  kind: AttachmentKind
+  url: string
+  thumb_url: string | null
+  file_name: string
+  size: number
+}
+
+const ATTACHMENT_KIND: Record<string, AttachmentKind> = {
+  image: 'image', video: 'video', audio: 'audio', file: 'document',
+}
+
+/**
+ * Normaliza `attachments` de un mensaje de Chatwoot (webhook o API). `data_url`
+ * es un enlace de Chatwoot que no vence y se abre sin sesión. Los tipos sin
+ * archivo (ubicación, contacto…) se descartan.
+ */
+export function normalizeChatwootAttachments(raw: unknown): ChatwootAttachment[] {
+  if (!Array.isArray(raw)) return []
+  const out: ChatwootAttachment[] = []
+  for (const a of raw as Array<Record<string, unknown>>) {
+    const url = typeof a?.data_url === 'string' ? a.data_url : ''
+    if (!url) continue
+    const fileType = String(a.file_type ?? '').toLowerCase()
+    let fileName = 'archivo'
+    try {
+      fileName = decodeURIComponent(new URL(url).pathname.split('/').pop() || 'archivo')
+    } catch {
+      // data_url sin forma de URL: se queda el nombre genérico
+    }
+    out.push({
+      kind: ATTACHMENT_KIND[fileType] ?? 'document',
+      url,
+      thumb_url: typeof a.thumb_url === 'string' && a.thumb_url ? a.thumb_url : null,
+      file_name: fileName,
+      size: Number(a.file_size ?? 0) || 0,
+    })
+  }
+  return out
+}

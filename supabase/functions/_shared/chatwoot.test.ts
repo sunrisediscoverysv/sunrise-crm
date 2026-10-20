@@ -4,6 +4,7 @@ import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import {
   computeHandoff,
   isResolved,
+  normalizeChatwootAttachments,
   phoneDigits,
   pickRelevantConversation,
   stateFromWebhook,
@@ -143,4 +144,28 @@ Deno.test('WhatsApp: el canal se deduce del teléfono cuando no hay inbox conoci
 
 Deno.test('is_assigned true pero assignee_id nulo no dispara handoff', () => {
   assertEquals(computeHandoff({ is_assigned: true, assignee_id: null, status: 'open' }), false)
+})
+
+Deno.test('Adjuntos de Chatwoot: tipo, nombre y tamaño', () => {
+  const out = normalizeChatwootAttachments([
+    {
+      file_type: 'image',
+      data_url: 'https://app.chatwoot.com/rails/active_storage/blobs/redirect/abc/Foto%20casa.jpg',
+      thumb_url: 'https://app.chatwoot.com/thumb.jpg',
+      file_size: 2048,
+    },
+    { file_type: 'file', data_url: 'https://app.chatwoot.com/x/ficha.pdf', file_size: null },
+    { file_type: 'audio', data_url: 'https://app.chatwoot.com/x/nota.ogg', thumb_url: '' },
+  ])
+  assertEquals(out.map(a => a.kind), ['image', 'document', 'audio'])
+  assertEquals(out[0].file_name, 'Foto casa.jpg')
+  assertEquals(out[0].size, 2048)
+  assertEquals(out[1].size, 0)
+  assertEquals(out[2].thumb_url, null)
+})
+
+Deno.test('Adjuntos de Chatwoot: sin archivo o forma rara se descartan', () => {
+  assertEquals(normalizeChatwootAttachments(null), [])
+  assertEquals(normalizeChatwootAttachments([{ file_type: 'location', coordinates_lat: 13.7 }]), [])
+  assertEquals(normalizeChatwootAttachments([{ file_type: 'story_mention', data_url: 'https://x/y' }])[0].kind, 'document')
 })

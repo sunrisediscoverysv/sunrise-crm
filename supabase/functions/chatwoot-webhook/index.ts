@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   getContactSourceId,
   getConversation,
+  normalizeChatwootAttachments,
   stateFromWebhook,
   upsertConversationState,
 } from '../_shared/chatwoot.ts'
@@ -408,6 +409,8 @@ Deno.serve(async (req: Request) => {
       chatwoot_conversation_id: payload.conversation?.id ?? null,
       agent_name: payload.sender?.name ?? null,
       ...(isBot ? { bot: true } : {}),
+      // Enlaces a los archivos para verlos en el hilo del CRM (no solo "[Adjunto]")
+      ...(hasAttachments ? { attachments: normalizeChatwootAttachments(payload.attachments) } : {}),
     },
   })
   if (insertError) {

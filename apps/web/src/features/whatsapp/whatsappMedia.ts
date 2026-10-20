@@ -4,10 +4,15 @@
 
 export type MediaKind = 'image' | 'video' | 'audio' | 'document'
 
-/** Lo que guarda la Edge Function en raw_payload.media de un saliente. */
+/**
+ * Un archivo del hilo. Los que envía el CRM (raw_payload.media) viven en el
+ * bucket privado (`storage_path`); los que llegan por Chatwoot
+ * (raw_payload.attachments) traen un enlace público de Chatwoot (`url`).
+ */
 export interface ChatMedia {
   kind: MediaKind
-  storage_path: string
+  storage_path?: string
+  url?: string
   file_name: string
   mime_type: string
   size: number
@@ -77,4 +82,30 @@ export function messageMedia(rawPayload: unknown): { media: ChatMedia; caption: 
     },
     caption: p?.caption ?? null,
   }
+}
+
+/** Adjuntos de un mensaje reflejado desde Chatwoot (raw_payload.attachments). */
+export function chatwootMedia(rawPayload: unknown): ChatMedia[] {
+  const list = (rawPayload as { attachments?: unknown } | null)?.attachments
+  if (!Array.isArray(list)) return []
+  const kinds: MediaKind[] = ['image', 'video', 'audio', 'document']
+  return list
+    .filter((a): a is { kind?: string; url: string; file_name?: string; size?: number } =>
+      typeof a?.url === 'string' && a.url !== '')
+    .map(a => ({
+      kind: kinds.includes(a.kind as MediaKind) ? (a.kind as MediaKind) : 'document',
+      url: a.url,
+      file_name: a.file_name || 'archivo',
+      mime_type: '',
+      size: Number(a.size ?? 0) || 0,
+    }))
+}
+
+/**
+ * true si el mensaje es un "[Adjunto]" de Chatwoot cuyo enlace aún no se ha
+ * buscado (mensajes guardados antes de que el webhook guardara los adjuntos).
+ */
+export function needsChatwootAttachments(content: string | null, rawPayload: unknown): boolean {
+  const p = rawPayload as { chatwoot_message_id?: unknown; attachments?: unknown } | null
+  return content === '[Adjunto]' && p?.chatwoot_message_id != null && p.attachments === undefined
 }
