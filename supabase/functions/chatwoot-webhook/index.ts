@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   getContactSourceId,
   getConversation,
+  nextWaStatus,
   stateFromWebhook,
   upsertConversationState,
 } from '../_shared/chatwoot.ts'
@@ -71,6 +72,9 @@ interface ChatwootPayload {
   message_type?: string | number
   private?: boolean
   attachments?: unknown[]
+  // message_updated: estado de entrega del mensaje en WhatsApp
+  status?: string
+  content_attributes?: { external_error?: string | null } | null
   channel?: string
   inbox?: { id?: number } | null
   sender?: { id?: number; name?: string; type?: string } | null
@@ -237,6 +241,35 @@ Deno.serve(async (req: Request) => {
   //   que sender.type no diga otra cosa (en estos payloads viene ausente).
   // message_type llega como string en los webhooks, pero se tolera la forma
   // numérica de la API (0 = incoming, 1 = outgoing) por si acaso.
+  // Estado de entrega (enviado/entregado/leído/fallido) de un mensaje que ya
+  // está en el CRM: Chatwoot lo reporta con message_updated. Sirve para lo que
+  // se envía desde el CRM vía chatwoot-send y para lo que escriben los agentes.
+  if (payload.event === 'message_updated') {
+    if (payload.id == null) return ignored('no_message_id')
+    const { data: rows } = await supabase
+      .from('messages')
+      .select('id, wa_status')
+      .eq('raw_payload->>chatwoot_message_id', String(payload.id))
+      .limit(2)
+    let updated = 0
+    for (const row of rows ?? []) {
+      const next = nextWaStatus(row.wa_status, payload.status)
+      if (!next) continue
+      const externalError = payload.content_attributes?.external_error ?? null
+      await supabase
+        .from('messages')
+        .update({
+          wa_status: next,
+          wa_error: next === 'failed' ? { title: externalError ?? 'Chatwoot no pudo entregar el mensaje' } : null,
+        })
+        .eq('id', row.id)
+      updated++
+    }
+    if (updated === 0) return ignored('status_unchanged')
+    console.log(`[chatwoot-webhook] status=${payload.status} rows=${updated}`, JSON.stringify(trace))
+    return json({ status: 'ok', updated })
+  }
+
   if (payload.event !== 'message_created') return ignored('event')
   if (payload.private === true) return ignored('private')
 

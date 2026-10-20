@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { supabase } from '@/lib/supabaseClient'
-import { functionsErrorMessage } from '@/lib/functions'
+import { functionsErrorCode, functionsErrorMessage } from '@/lib/functions'
 import type { Message } from '@/types/database'
 import { SendTemplateModal } from './SendTemplateModal'
 import {
@@ -122,6 +122,16 @@ export function ChatPanel({ client, className }: ChatPanelProps) {
     mutationFn: async (text: string) => {
       if (isWhatsapp) {
         if (!client.phone) throw new Error('Este cliente no tiene número de WhatsApp.')
+        // Primero por Chatwoot: así el mensaje queda también en Chatwoot y los
+        // agentes ven lo que se respondió desde el CRM. Solo si el cliente nunca
+        // pasó por Chatwoot (sin conversación) se envía directo a Meta.
+        const viaChatwootRes = await supabase.functions.invoke('chatwoot-send', {
+          body: { client_id: client.id, text },
+        })
+        if (!viaChatwootRes.error) return
+        if (await functionsErrorCode(viaChatwootRes.error) !== 'no_conversation') {
+          throw new Error(await functionsErrorMessage(viaChatwootRes.error, 'No se pudo enviar el mensaje.'))
+        }
         const { error } = await supabase.functions.invoke('whatsapp', {
           body: { action: 'text', client_id: client.id, to: client.phone, text },
         })

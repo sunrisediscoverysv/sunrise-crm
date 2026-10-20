@@ -13,3 +13,15 @@ export async function functionsErrorMessage(error: unknown, fallback = 'Ocurrió
   }
   return (error as Error)?.message ?? fallback
 }
+
+/** El `code` de máquina que acompaña al `{ error }` de algunas funciones, o null. */
+export async function functionsErrorCode(error: unknown): Promise<string | null> {
+  const ctx = (error as { context?: Response } | null)?.context
+  if (!ctx || typeof ctx.json !== 'function') return null
+  try {
+    const parsed = await ctx.clone().json()
+    return parsed?.code ? String(parsed.code) : null
+  } catch {
+    return null
+  }
+}

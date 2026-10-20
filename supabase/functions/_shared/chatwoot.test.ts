@@ -4,6 +4,7 @@ import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import {
   computeHandoff,
   isResolved,
+  nextWaStatus,
   phoneDigits,
   pickRelevantConversation,
   stateFromWebhook,
@@ -143,4 +144,21 @@ Deno.test('WhatsApp: el canal se deduce del teléfono cuando no hay inbox conoci
 
 Deno.test('is_assigned true pero assignee_id nulo no dispara handoff', () => {
   assertEquals(computeHandoff({ is_assigned: true, assignee_id: null, status: 'open' }), false)
+})
+
+Deno.test('Estado de entrega: avanza y nunca retrocede', () => {
+  assertEquals(nextWaStatus(null, 'sent'), 'sent')
+  assertEquals(nextWaStatus('sent', 'delivered'), 'delivered')
+  assertEquals(nextWaStatus('delivered', 'read'), 'read')
+  assertEquals(nextWaStatus('read', 'delivered'), null)
+  assertEquals(nextWaStatus('delivered', 'sent'), null)
+  assertEquals(nextWaStatus('sent', 'sent'), null)
+})
+
+Deno.test('Estado de entrega: failed siempre gana y lo desconocido se ignora', () => {
+  assertEquals(nextWaStatus('read', 'failed'), 'failed')
+  assertEquals(nextWaStatus('failed', 'failed'), null)
+  assertEquals(nextWaStatus('failed', 'delivered'), null)
+  assertEquals(nextWaStatus(null, 'progress'), null)
+  assertEquals(nextWaStatus('sent', undefined), null)
 })
