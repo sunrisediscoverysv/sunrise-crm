@@ -14,6 +14,13 @@ build/
 supabase/.branches/
 supabase/.temp/
 
+# Playwright E2E — el storageState lleva un JWT de sesión real
+apps/web/tests/e2e/.auth/
+apps/web/tests/e2e/.report/
+apps/web/tests/e2e/.artifacts/
+apps/web/playwright-report/
+apps/web/test-results/
+
 # macOS
 .DS_Store
 
@@ -21,3 +28,4 @@ supabase/.temp/
 .vscode/
 *.swp
 .vercel
+.env*
